@@ -10,7 +10,7 @@
   <h1 class="text-2xl font-bold mb-4">Filter Data — Sheet GABUNG</h1>
 
   <!-- Input Section -->
-  <div class="bg-white p-4 rounded-lg shadow mb-6 grid gap-4 max-w-4xl mx-auto">
+  <div class="bg-white p-4 rounded-lg shadow mb-6 max-w-4xl mx-auto grid gap-4">
     <div>
       <label class="block font-medium">Kepala (max 7 digit)</label>
       <textarea id="angkaKepala" rows="1" maxlength="7" class="w-full border rounded px-3 py-2" placeholder="Contoh: 1234567"></textarea>
@@ -82,8 +82,8 @@
   }
 
   function filterData(table) {
-    const kepalaInput = document.getElementById('angkaKepala').value.trim();
-    const ekorInput = document.getElementById('angkaEkor').value.trim();
+    const kepalaInputRaw = document.getElementById('angkaKepala').value.trim();
+    const ekorInputRaw = document.getElementById('angkaEkor').value.trim();
     const angkaMainList = document.getElementById('angkaMain').value
       .split("\n")
       .map(v => v.trim())
@@ -93,32 +93,30 @@
       .map(v => v.trim())
       .filter(v => v && shioMap[v]);
 
+    // Bersihkan input kepala dan ekor jadi array digit
+    const kepalaInput = kepalaInputRaw.split('').filter(c => /\d/.test(c));
+    const ekorInput = ekorInputRaw.split('').filter(c => /\d/.test(c));
+
     const rows = table.rows.map(r => r.c.map(c => c && c.v !== null ? String(c.v) : ""));
-    
-    // Jika semua input kosong, tampilkan semua data
-    const allInputsEmpty = !kepalaInput && !ekorInput && angkaMainList.length === 0 && shioSelected.length === 0;
+
+    const allInputsEmpty = kepalaInput.length === 0 && ekorInput.length === 0 && angkaMainList.length === 0 && shioSelected.length === 0;
     if (allInputsEmpty) return rows;
 
     return rows.filter(r => {
-      const num = r[0]; // kolom pertama dianggap angka utama
+      const num = r[0];
       if (!num || num.length < 5) return false;
 
       const kepala = num[3];
       const ekor = num[4];
 
-      // Filter kepala jika ada input
-      if (kepalaInput && !kepalaInput.includes(kepala)) return false;
+      if (kepalaInput.length > 0 && !kepalaInput.includes(kepala)) return false;
+      if (ekorInput.length > 0 && !ekorInput.includes(ekor)) return false;
 
-      // Filter ekor jika ada input
-      if (ekorInput && !ekorInput.includes(ekor)) return false;
-
-      // Filter angka main jika ada input
       if (angkaMainList.length > 0) {
         const matchMain = angkaMainList.some(am => am.includes(kepala) || am.includes(ekor));
         if (!matchMain) return false;
       }
 
-      // Filter shio jika ada input
       if (shioSelected.length > 0) {
         const duaDigit = num.slice(-2);
         let matchShio = false;
