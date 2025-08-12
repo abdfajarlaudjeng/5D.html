@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sheet GABUNG — Tabel dari Google Sheets</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6 font-sans">
+  <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-bold">Data: Sheet <span class="text-blue-600">GABUNG</span></h1>
+    <div class="flex gap-2">
+      <input id="q" type="search" placeholder="Cari..." oninput="applyFilter()" class="border rounded-lg px-3 py-2 w-64" />
+      <button id="reload" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Muat ulang</button>
+      <button id="download" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">Download CSV</button>
+    </div>
+  </header>
+
+  <div class="bg-white p-4 rounded-lg shadow mb-6">
+    <h2 class="text-lg font-semibold mb-2">Input Angka Main</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="angkaKepala" class="block mb-1 font-medium">Kepala</label>
+        <textarea id="angkaKepala" rows="3" placeholder="Masukkan angka kepala, pisahkan dengan spasi atau koma" class="w-full border rounded-lg px-3 py-2"></textarea>
+      </div>
+      <div>
+        <label for="angkaEkor" class="block mb-1 font-medium">Ekor</label>
+        <textarea id="angkaEkor" rows="3" placeholder="Masukkan angka ekor, pisahkan dengan spasi atau koma" class="w-full border rounded-lg px-3 py-2"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-sm text-gray-500 mb-4">
+    Sumber: Google Sheets (ID: <code>1AVLTOow3t_5vdBfa_S8hUNKo15vYpRYq8FZheRlallY</code>) — sheet: <code>GABUNG</code>
+  </div>
+
+  <div id="table-wrap" class="overflow-x-auto bg-white p-4 rounded-lg shadow"></div>
+
+  <script>
+    const SHEET_ID = '1AVLTOow3t_5vdBfa_S8hUNKo15vYpRYq8FZheRlallY';
+    const SHEET_NAME = 'GABUNG';
+    const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
+
+    const tableWrap = document.getElementById('table-wrap');
+    const reloadBtn = document.getElementById('reload');
+    const downloadBtn = document.getElementById('download');
+    const qInput = document.getElementById('q');
+    let lastData = null;
+
+    async function fetchSheet() {
+      tableWrap.innerHTML = '<p>Memuat data…</p>';
+      try {
+        const res = await fetch(gvizUrl);
+        const text = await res.text();
+        const jsonText = text.replace(/^.*setResponse\(|\);\s*$/gs, '');
+        const obj = JSON.parse(jsonText);
+        lastData = obj.table;
+        renderTable(lastData);
+      } catch (err) {
+        tableWrap.innerHTML = `<p class='text-red-600'>Gagal memuat. Pastikan spreadsheet dibagikan publik atau dipublikasikan.<br><small>${err.message}</small></p>`;
+        console.error(err);
+      }
+    }
+
+    function renderTable(table) {
+      if (!table || !table.cols) { tableWrap.innerHTML = '<p>Tidak ada data.</p>'; return; }
+      const cols = table.cols.map(c => c.label || c.id || '');
+      const rows = table.rows.map(r => r.c.map(cell => cell && cell.v !== null ? cell.v : ''));
+
+      let html = `<table class='table-auto border-collapse w-full'>`;
+      html += `<thead><tr>${cols.map(h => `<th class='border px-3 py-2 bg-gray-100'>${h}</th>`).join('')}</tr></thead>`;
+      html += `<tbody>`;
+      rows.forEach(r => {
+        html += `<tr>${r.map(cell => `<td class='border px-3 py-2'>${cell}</td>`).join('')}</tr>`;
+      });
+      html += `</tbody></table>`;
+      tableWrap.innerHTML = html;
+    }
+
+    function applyFilter() {
+      const q = qInput.value.trim().toLowerCase();
+      if (!lastData) return;
+      const cols = lastData.cols.map(c => c.label || c.id || '');
+      const rows = lastData.rows.map(r => r.c.map(cell => cell && cell.v !== null ? String(cell.v) : ''));
+      const filtered = rows.filter(r => r.some(cell => cell.toLowerCase().includes(q)));
+
+      let html = `<table class='table-auto border-collapse w-full'>`;
+      html += `<thead><tr>${cols.map(h => `<th class='border px-3 py-2 bg-gray-100'>${h}</th>`).join('')}</tr></thead>`;
+      html += `<tbody>`;
+      filtered.forEach(r => {
+        html += `<tr>${r.map(cell => `<td class='border px-3 py-2'>${cell}</td>`).join('')}</tr>`;
+      });
+      html += `</tbody></table>`;
+      tableWrap.innerHTML = html;
+    }
+
+    reloadBtn.addEventListener('click', fetchSheet);
+    downloadBtn.addEventListener('click', () => {
+      const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+      window.open(csvUrl, '_blank');
+    });
+
+    fetchSheet();
+  </script>
+</body>
+</html>
