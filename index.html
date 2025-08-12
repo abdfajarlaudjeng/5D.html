@@ -10,7 +10,7 @@
   <h1 class="text-2xl font-bold mb-4">Filter Data — Sheet GABUNG</h1>
 
   <!-- Input Section -->
-  <div class="bg-white p-4 rounded-lg shadow mb-6 max-w-4xl mx-auto grid gap-4">
+  <div class="bg-white p-4 rounded-lg shadow mb-6 max-w-6xl mx-auto grid gap-4">
     <div>
       <label class="block font-medium">Kepala (max 7 digit)</label>
       <textarea id="angkaKepala" rows="1" maxlength="7" class="w-full border rounded px-3 py-2" placeholder="Contoh: 1234567"></textarea>
@@ -34,17 +34,17 @@
   <div id="loading" class="hidden text-blue-500 mb-4 text-center">⏳ Memproses data...</div>
 
   <!-- Clipboard buttons -->
-  <div id="clipboardBtns" class="hidden mb-4 flex gap-2 justify-center max-w-4xl mx-auto">
+  <div id="clipboardBtns" class="hidden mb-4 flex gap-2 justify-center max-w-6xl mx-auto">
     <button onclick="copyResults('all')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Salin Semua</button>
     <button onclick="copyResults('kepala')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">Salin Kepala</button>
     <button onclick="copyResults('ekor')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Salin Ekor</button>
   </div>
 
   <!-- Notification -->
-  <div id="notif" class="hidden text-green-600 mb-4 text-center max-w-4xl mx-auto font-semibold">✅ Tersalin!</div>
+  <div id="notif" class="hidden text-green-600 mb-4 text-center max-w-6xl mx-auto font-semibold">✅ Tersalin!</div>
 
   <!-- Table -->
-  <div id="table-wrap" class="overflow-x-auto bg-white p-4 rounded-lg shadow max-w-4xl mx-auto"></div>
+  <div id="table-wrap" class="overflow-x-auto bg-white p-4 rounded-lg shadow max-w-6xl mx-auto"></div>
 
 <script>
   const SHEET_ID = '1AVLTOow3t_5vdBfa_S8hUNKo15vYpRYq8FZheRlallY';
@@ -73,6 +73,7 @@
   const clipboardBtns = document.getElementById('clipboardBtns');
 
   let lastFilteredRows = [];
+  let lastHeaders = [];
 
   async function fetchSheet() {
     const res = await fetch(gvizUrl);
@@ -97,6 +98,7 @@
     const ekorInput = ekorInputRaw.split('').filter(c => /\d/.test(c));
 
     const rows = table.rows.map(r => r.c.map(c => c && c.v !== null ? String(c.v) : ""));
+    lastHeaders = table.cols.map(c => c.label || '');
 
     const noFilter = kepalaInput.length === 0 && ekorInput.length === 0 && angkaMainList.length === 0 && shioSelected.length === 0;
     if (noFilter) return rows;
@@ -144,11 +146,27 @@
       clipboardBtns.classList.add('hidden');
       return;
     }
+
+    // Ambil max 10 kolom (A-J)
+    const maxCols = 10;
+    const colsToShow = lastHeaders.slice(0, maxCols);
+    
     let html = "<table class='table-auto border-collapse w-full'>";
-    rows.forEach(r => {
-      html += `<tr><td class='border px-3 py-2 text-center font-mono'>${r[0]}</td></tr>`;
+    html += "<thead><tr>";
+    colsToShow.forEach(col => {
+      html += `<th class='border px-3 py-2 bg-gray-100 text-center'>${col}</th>`;
     });
-    html += "</table>";
+    html += "</tr></thead><tbody>";
+
+    rows.forEach(r => {
+      html += "<tr>";
+      for(let i=0; i<maxCols; i++) {
+        html += `<td class='border px-3 py-2 text-center font-mono'>${r[i] !== undefined ? r[i] : ''}</td>`;
+      }
+      html += "</tr>";
+    });
+    html += "</tbody></table>";
+
     tableWrap.innerHTML = html;
     clipboardBtns.classList.remove('hidden');
   }
@@ -157,7 +175,8 @@
     if (!lastFilteredRows.length) return;
     let text = "";
     if (mode === "all") {
-      text = lastFilteredRows.map(r => r[0]).join("\n");
+      // Copy semua kolom A-J
+      text = lastFilteredRows.map(r => r.slice(0,10).join("\t")).join("\n");
     } else if (mode === "kepala") {
       text = lastFilteredRows.map(r => r[0][3]).join("\n");
     } else if (mode === "ekor") {
