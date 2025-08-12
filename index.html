@@ -3,41 +3,47 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sheet GABUNG — Filter Kepala, Ekor, Angka Main, Shio</title>
+  <title>Filter Sheet GABUNG</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-6 font-sans">
-  <header class="mb-6">
-    <h1 class="text-2xl font-bold">Data: Sheet <span class="text-blue-600">GABUNG</span></h1>
-  </header>
+  <h1 class="text-2xl font-bold mb-4">Filter Data — Sheet GABUNG</h1>
 
-  <div class="bg-white p-4 rounded-lg shadow mb-6">
-    <h2 class="text-lg font-semibold mb-4">Input Filter</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label for="angkaKepala" class="block mb-1 font-medium">Kepala (max 7 digit)</label>
-        <textarea id="angkaKepala" rows="1" placeholder="Contoh: 6789012" class="w-full border rounded-lg px-3 py-2"></textarea>
-      </div>
-      <div>
-        <label for="angkaEkor" class="block mb-1 font-medium">Ekor (max 7 digit)</label>
-        <textarea id="angkaEkor" rows="1" placeholder="Contoh: 3456789" class="w-full border rounded-lg px-3 py-2"></textarea>
-      </div>
-      <div>
-        <label for="angkaMain" class="block mb-1 font-medium">Angka Main (max 10 baris, 7 digit per baris)</label>
-        <textarea id="angkaMain" rows="5" placeholder="Masukkan angka main" class="w-full border rounded-lg px-3 py-2"></textarea>
-      </div>
-      <div>
-        <label for="shioInput" class="block mb-1 font-medium">Shio (1–12, pisah koma)</label>
-        <textarea id="shioInput" rows="1" placeholder="Contoh: 1,3,5" class="w-full border rounded-lg px-3 py-2"></textarea>
-      </div>
+  <!-- Input Section -->
+  <div class="bg-white p-4 rounded-lg shadow mb-6 grid gap-4">
+    <div>
+      <label class="block font-medium">Kepala (max 7 digit)</label>
+      <textarea id="angkaKepala" rows="1" maxlength="7" class="w-full border rounded px-3 py-2"></textarea>
     </div>
-    <div class="mt-4 flex gap-3">
-      <button id="prosesBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Proses</button>
-      <button id="copyBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg hidden">Salin ke Clipboard</button>
-      <span id="loading" class="hidden ml-3 text-gray-500">Memproses...</span>
+    <div>
+      <label class="block font-medium">Ekor (max 7 digit)</label>
+      <textarea id="angkaEkor" rows="1" maxlength="7" class="w-full border rounded px-3 py-2"></textarea>
     </div>
+    <div>
+      <label class="block font-medium">Angka Main (max 10 baris, 7 digit per baris)</label>
+      <textarea id="angkaMain" rows="10" class="w-full border rounded px-3 py-2"></textarea>
+    </div>
+    <div>
+      <label class="block font-medium">Shio (misal: 1,2,3)</label>
+      <textarea id="shioInput" rows="1" class="w-full border rounded px-3 py-2"></textarea>
+    </div>
+    <button id="proses" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Proses</button>
   </div>
 
+  <!-- Loading -->
+  <div id="loading" class="hidden text-blue-500 mb-4">⏳ Memproses data...</div>
+
+  <!-- Clipboard buttons -->
+  <div id="clipboardBtns" class="hidden mb-4 flex gap-2">
+    <button onclick="copyResults('all')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">Salin Semua</button>
+    <button onclick="copyResults('kepala')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">Salin Kepala</button>
+    <button onclick="copyResults('ekor')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Salin Ekor</button>
+  </div>
+
+  <!-- Notification -->
+  <div id="notif" class="hidden text-green-600 mb-4">✅ Tersalin!</div>
+
+  <!-- Table -->
   <div id="table-wrap" class="overflow-x-auto bg-white p-4 rounded-lg shadow"></div>
 
   <script>
@@ -45,132 +51,118 @@
     const SHEET_NAME = 'GABUNG';
     const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
 
-    const tableWrap = document.getElementById('table-wrap');
-    const prosesBtn = document.getElementById('prosesBtn');
-    const loadingEl = document.getElementById('loading');
-    const copyBtn = document.getElementById('copyBtn');
-
-    const kepalaEl = document.getElementById('angkaKepala');
-    const ekorEl = document.getElementById('angkaEkor');
-    const angkaMainEl = document.getElementById('angkaMain');
-    const shioEl = document.getElementById('shioInput');
-
-    let lastData = null;
-    let filteredRows = [];
-
     const shioMap = {
-      1: ['01','13','25','37','49','61','73','85','97'],
-      2: ['02','14','26','38','50','62','74','86','98'],
-      3: ['03','15','27','39','51','63','75','87','99'],
-      4: ['04','16','28','40','52','64','76','88'],
-      5: ['05','17','29','41','53','65','77','89'],
-      6: ['06','18','30','42','54','66','78','90'],
-      7: ['07','19','31','43','55','67','79','91'],
-      8: ['08','20','32','44','56','68','80','92'],
-      9: ['09','21','33','45','57','69','81','93'],
-      10:['10','22','34','46','58','70','82','94'],
-      11:['11','23','35','47','59','71','83','95'],
-      12:['12','24','36','48','60','72','84','96']
+      1: ["01","13","25","37","49","61","73","85","97"],
+      2: ["02","14","26","38","50","62","74","86","98"],
+      3: ["03","15","27","39","51","63","75","87","99"],
+      4: ["04","16","28","40","52","64","76","88","00"],
+      5: ["05","17","29","41","53","65","77","89"],
+      6: ["06","18","30","42","54","66","78","90"],
+      7: ["07","19","31","43","55","67","79","91"],
+      8: ["08","20","32","44","56","68","80","92"],
+      9: ["09","21","33","45","57","69","81","93"],
+      10: ["10","22","34","46","58","70","82","94"],
+      11: ["11","23","35","47","59","71","83","95"],
+      12: ["12","24","36","48","60","72","84","96"]
     };
 
-    // Validasi input
-    ['angkaKepala', 'angkaEkor'].forEach(id => {
-      const el = document.getElementById(id);
-      el.addEventListener('input', () => {
-        el.value = el.value.replace(/\D/g, '').slice(0, 7);
-      });
-    });
+    const tableWrap = document.getElementById('table-wrap');
+    const prosesBtn = document.getElementById('proses');
+    const loadingEl = document.getElementById('loading');
+    const notifEl = document.getElementById('notif');
+    const clipboardBtns = document.getElementById('clipboardBtns');
 
-    angkaMainEl.addEventListener('input', () => {
-      let lines = angkaMainEl.value.split(/\n/).map(l => l.replace(/\D/g, '').slice(0, 7));
-      if (lines.length > 10) lines = lines.slice(0, 10);
-      angkaMainEl.value = lines.join('\n');
-    });
-
-    shioEl.addEventListener('input', () => {
-      shioEl.value = shioEl.value
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => /^\d{1,2}$/.test(s) && +s >= 1 && +s <= 12)
-        .join(',');
-    });
+    let lastFilteredRows = [];
 
     async function fetchSheet() {
-      tableWrap.innerHTML = '<p>Memuat data…</p>';
-      try {
-        const res = await fetch(gvizUrl);
-        const text = await res.text();
-        const jsonText = text.replace(/^.*setResponse\(|\);\s*$/gs, '');
-        const obj = JSON.parse(jsonText);
-        lastData = obj.table;
-        renderTable(lastData.rows.map(r => r.c.map(cell => cell && cell.v !== null ? cell.v : '')), lastData.cols.map(c => c.label || c.id || ''));
-      } catch (err) {
-        tableWrap.innerHTML = `<p class='text-red-600'>Gagal memuat data.<br><small>${err.message}</small></p>`;
-      }
+      const res = await fetch(gvizUrl);
+      const text = await res.text();
+      const jsonText = text.replace(/^.*setResponse\(|\);\s*$/gs, '');
+      return JSON.parse(jsonText).table;
     }
 
-    function renderTable(rows, cols) {
-      let html = `<table class='table-auto border-collapse w-full'>`;
-      html += `<thead><tr>${cols.map(h => `<th class='border px-3 py-2 bg-gray-100'>${h}</th>`).join('')}</tr></thead>`;
-      html += `<tbody>`;
-      rows.forEach(r => {
-        html += `<tr>${r.map(cell => `<td class='border px-3 py-2'>${cell}</td>`).join('')}</tr>`;
-      });
-      html += `</tbody></table>`;
-      tableWrap.innerHTML = html;
-    }
+    function filterData(table) {
+      const kepalaInput = document.getElementById('angkaKepala').value.trim();
+      const ekorInput = document.getElementById('angkaEkor').value.trim();
+      const angkaMainList = document.getElementById('angkaMain').value
+        .split("\n")
+        .map(v => v.trim())
+        .filter(v => v);
+      const shioSelected = document.getElementById('shioInput').value
+        .split(",")
+        .map(v => v.trim())
+        .filter(v => v && shioMap[v]);
 
-    function filterData() {
-      if (!lastData) return;
-      const kepalaStr = kepalaEl.value;
-      const ekorStr = ekorEl.value;
-      const angkaMainList = angkaMainEl.value.split(/\n/).filter(Boolean);
-      const shioList = shioEl.value.split(',').map(s => s.trim()).filter(Boolean);
-
-      const cols = lastData.cols.map(c => c.label || c.id || '');
-      const rows = lastData.rows.map(r => r.c.map(cell => cell && cell.v !== null ? String(cell.v) : ''));
-
-      filteredRows = rows.filter(r => {
-        const num = r[0];
+      const rows = table.rows.map(r => r.c.map(c => c && c.v !== null ? String(c.v) : ""));
+      const hasil = rows.filter(r => {
+        const num = r[0]; // kolom pertama dianggap angka utama
         if (!num || num.length < 5) return false;
 
         const kepala = num[3];
         const ekor = num[4];
-        const kepalaOk = kepalaStr.includes(kepala);
-        const ekorOk = ekorStr.includes(ekor);
 
-        const mainOk = angkaMainList.some(main => main.includes(kepala) || main.includes(ekor));
+        if (kepalaInput && !kepalaInput.includes(kepala)) return false;
+        if (ekorInput && !ekorInput.includes(ekor)) return false;
 
-        let shioOk = true;
-        if (shioList.length > 0) {
+        // Cek angka main di kepala atau ekor
+        const matchMain = angkaMainList.some(am => am.includes(kepala) || am.includes(ekor));
+        if (!matchMain) return false;
+
+        // Cek shio
+        if (shioSelected.length > 0) {
           const duaDigit = num.slice(-2);
-          shioOk = shioList.some(shioNum => shioMap[shioNum].includes(duaDigit));
+          let matchShio = false;
+          shioSelected.forEach(sh => {
+            if (shioMap[sh].includes(duaDigit)) matchShio = true;
+          });
+          if (!matchShio) return false;
         }
 
-        return kepalaOk && ekorOk && mainOk && shioOk;
+        return true;
       });
 
-      renderTable(filteredRows, cols);
-      copyBtn.classList.toggle('hidden', filteredRows.length === 0);
+      return hasil;
     }
 
-    prosesBtn.addEventListener('click', () => {
-      loadingEl.classList.remove('hidden');
-      setTimeout(() => {
-        filterData();
-        loadingEl.classList.add('hidden');
-      }, 300);
-    });
-
-    copyBtn.addEventListener('click', () => {
-      const angkaList = filteredRows.map(r => r[0]).join('\n');
-      navigator.clipboard.writeText(angkaList).then(() => {
-        copyBtn.textContent = 'Tersalin!';
-        setTimeout(() => copyBtn.textContent = 'Salin ke Clipboard', 1500);
+    function renderTable(rows) {
+      if (!rows.length) {
+        tableWrap.innerHTML = "<p>Tidak ada data cocok.</p>";
+        clipboardBtns.classList.add('hidden');
+        return;
+      }
+      let html = "<table class='table-auto border-collapse w-full'>";
+      rows.forEach(r => {
+        html += `<tr><td class='border px-3 py-2'>${r[0]}</td></tr>`;
       });
-    });
+      html += "</table>";
+      tableWrap.innerHTML = html;
+      clipboardBtns.classList.remove('hidden');
+    }
 
-    fetchSheet();
+    function copyResults(mode) {
+      if (!lastFilteredRows.length) return;
+      let text = "";
+      if (mode === "all") {
+        text = lastFilteredRows.map(r => r[0]).join("\n");
+      } else if (mode === "kepala") {
+        text = lastFilteredRows.map(r => r[0][3]).join("\n");
+      } else if (mode === "ekor") {
+        text = lastFilteredRows.map(r => r[0][4]).join("\n");
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        notifEl.classList.remove('hidden');
+        setTimeout(() => notifEl.classList.add('hidden'), 1500);
+      });
+    }
+
+    prosesBtn.addEventListener('click', async () => {
+      loadingEl.classList.remove('hidden');
+      tableWrap.innerHTML = "";
+      const data = await fetchSheet();
+      lastFilteredRows = filterData(data);
+      renderTable(lastFilteredRows);
+      loadingEl.classList.add('hidden');
+    });
   </script>
 </body>
 </html>
