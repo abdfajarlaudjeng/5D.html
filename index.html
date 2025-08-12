@@ -1,43 +1,43 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Filter Kepala, Ekor, Angka Main</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Filter Kepala & Ekor — Sheet GABUNG</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-6 font-sans">
+
   <header class="mb-6">
-    <h1 class="text-2xl font-bold">Filter Data Sheet <span class="text-blue-600">GABUNG</span></h1>
+    <h1 class="text-2xl font-bold">Filter Kepala & Ekor dari Sheet <span class="text-blue-600">GABUNG</span></h1>
   </header>
 
-  <div class="bg-white p-4 rounded-lg shadow mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div>
-      <label for="angkaKepala" class="block mb-1 font-medium">Kepala</label>
-      <textarea id="angkaKepala" rows="4" placeholder="Satu angka per baris" class="w-full border rounded-lg px-3 py-2"></textarea>
+  <!-- Input Form -->
+  <div class="bg-white p-4 rounded-lg shadow mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div>
+        <label for="kepalaInput" class="block mb-1 font-medium">Kepala (max 7 digit)</label>
+        <input id="kepalaInput" type="text" maxlength="7" pattern="\d*" placeholder="Contoh: 1234567" class="w-full border rounded-lg px-3 py-2" />
+      </div>
+      <div>
+        <label for="ekorInput" class="block mb-1 font-medium">Ekor (max 7 digit)</label>
+        <input id="ekorInput" type="text" maxlength="7" pattern="\d*" placeholder="Contoh: 7654321" class="w-full border rounded-lg px-3 py-2" />
+      </div>
+      <div>
+        <label for="angkaMainInput" class="block mb-1 font-medium">Angka Main (max 7 digit)</label>
+        <input id="angkaMainInput" type="text" maxlength="7" pattern="\d*" placeholder="Contoh: 6789012" class="w-full border rounded-lg px-3 py-2" />
+      </div>
     </div>
-    <div>
-      <label for="angkaEkor" class="block mb-1 font-medium">Ekor</label>
-      <textarea id="angkaEkor" rows="4" placeholder="Satu angka per baris" class="w-full border rounded-lg px-3 py-2"></textarea>
-    </div>
-    <div>
-      <label for="angkaMain" class="block mb-1 font-medium">Angka Main (max 10 baris, max 7 digit)</label>
-      <textarea id="angkaMain" rows="4" placeholder="Satu angka per baris" class="w-full border rounded-lg px-3 py-2"></textarea>
+    <div class="flex gap-2">
+      <button id="prosesBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+        <span>Proses</span>
+        <span id="loadingSpinner" class="hidden animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>
+      </button>
+      <button id="copyBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">Copy Hasil</button>
     </div>
   </div>
 
-  <div class="flex items-center gap-2 mb-4">
-    <button id="proses" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-      <span id="prosesText">Proses</span>
-      <svg id="spinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z"></path>
-      </svg>
-    </button>
-    <button id="copy" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">Copy Hasil</button>
-    <span id="jumlah" class="text-sm text-gray-600"></span>
-  </div>
-
+  <div id="resultCount" class="mb-2 text-sm text-gray-600"></div>
   <div id="table-wrap" class="overflow-x-auto bg-white p-4 rounded-lg shadow"></div>
 
   <script>
@@ -45,75 +45,91 @@
     const SHEET_NAME = 'GABUNG';
     const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
 
-    let allRows = [];
+    const tableWrap = document.getElementById('table-wrap');
+    const resultCount = document.getElementById('resultCount');
+    const prosesBtn = document.getElementById('prosesBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const copyBtn = document.getElementById('copyBtn');
+
+    let lastData = null;
 
     async function fetchSheet() {
-      const res = await fetch(gvizUrl);
-      const text = await res.text();
-      const jsonText = text.replace(/^.*setResponse\(|\);\s*$/gs, '');
-      const obj = JSON.parse(jsonText);
-      const rows = obj.table.rows.map(r => r.c.map(c => c && c.v !== null ? String(c.v) : ''));
-      allRows = rows;
+      tableWrap.innerHTML = '<p>Memuat data…</p>';
+      try {
+        const res = await fetch(gvizUrl);
+        const text = await res.text();
+        const jsonText = text.replace(/^.*setResponse\(|\);\s*$/gs, '');
+        const obj = JSON.parse(jsonText);
+        lastData = obj.table;
+        tableWrap.innerHTML = '<p>Data siap. Silakan masukkan filter dan klik Proses.</p>';
+      } catch (err) {
+        tableWrap.innerHTML = `<p class='text-red-600'>Gagal memuat data.<br><small>${err.message}</small></p>`;
+      }
     }
 
     function filterData() {
-      const kepalaList = document.getElementById('angkaKepala').value.trim().split(/\s+/).filter(Boolean);
-      const ekorList = document.getElementById('angkaEkor').value.trim().split(/\s+/).filter(Boolean);
-      let angkaMainList = document.getElementById('angkaMain').value.trim().split(/\n/).filter(Boolean);
+      const kepalaStr = document.getElementById('kepalaInput').value.trim();
+      const ekorStr = document.getElementById('ekorInput').value.trim();
+      const mainStr = document.getElementById('angkaMainInput').value.trim();
 
-      // Batas 10 baris
-      angkaMainList = angkaMainList.slice(0, 10);
-      // Batas 7 digit
-      angkaMainList = angkaMainList.map(a => a.slice(0, 7));
-
-      return allRows.filter(row => {
-        const nomor = row[0]; // asumsi kolom pertama berisi angka
-        if (!nomor) return false;
-
-        const kepala = nomor[0];
-        const ekor = nomor[nomor.length - 1];
-
-        const matchKepala = kepalaList.length === 0 || kepalaList.includes(kepala);
-        const matchEkor = ekorList.length === 0 || ekorList.includes(ekor);
-
-        const matchMain = angkaMainList.length === 0 || angkaMainList.some(main => kepala.includes(main) || ekor.includes(main));
-
-        return matchKepala && matchEkor && matchMain;
-      });
-    }
-
-    function renderTable(rows) {
-      if (rows.length === 0) {
-        document.getElementById('table-wrap').innerHTML = '<p class="text-red-500">Tidak ada data ditemukan.</p>';
-        document.getElementById('jumlah').textContent = '';
+      if (!lastData) return;
+      if (!kepalaStr || !ekorStr || !mainStr) {
+        alert('Isi semua kolom dengan angka!');
         return;
       }
-      let html = `<table class='table-auto border-collapse w-full'><tbody>`;
+
+      const cols = lastData.cols.map(c => c.label || c.id || '');
+      const rows = lastData.rows.map(r => r.c.map(cell => cell && cell.v !== null ? String(cell.v) : ''));
+
+      // Asumsikan kolom pertama adalah nomor yang mau difilter
+      const filtered = rows.filter(r => {
+        const nomor = r[0];
+        if (!nomor || nomor.length < 2) return false;
+
+        const digitKepala = nomor[0];
+        const digitEkor = nomor[nomor.length - 1];
+
+        const kepalaMatch = kepalaStr.includes(digitKepala);
+        const ekorMatch = ekorStr.includes(digitEkor);
+
+        const kepalaContainsMain = [...digitKepala].some(d => mainStr.includes(d));
+        const ekorContainsMain = [...digitEkor].some(d => mainStr.includes(d));
+
+        return kepalaMatch && ekorMatch && (kepalaContainsMain || ekorContainsMain);
+      });
+
+      renderTable(cols, filtered);
+    }
+
+    function renderTable(cols, rows) {
+      let html = `<table class='table-auto border-collapse w-full text-sm'>`;
+      html += `<thead><tr>${cols.map(h => `<th class='border px-3 py-2 bg-gray-100'>${h}</th>`).join('')}</tr></thead>`;
+      html += `<tbody>`;
       rows.forEach(r => {
         html += `<tr>${r.map(cell => `<td class='border px-3 py-2'>${cell}</td>`).join('')}</tr>`;
       });
       html += `</tbody></table>`;
-      document.getElementById('table-wrap').innerHTML = html;
-      document.getElementById('jumlah').textContent = `${rows.length} baris ditemukan`;
+      tableWrap.innerHTML = html;
+      resultCount.textContent = `Hasil: ${rows.length} baris ditemukan`;
     }
 
-    document.getElementById('proses').addEventListener('click', () => {
-      document.getElementById('spinner').classList.remove('hidden');
-      document.getElementById('prosesText').textContent = 'Memproses...';
+    prosesBtn.addEventListener('click', () => {
+      loadingSpinner.classList.remove('hidden');
       setTimeout(() => {
-        const hasil = filterData();
-        renderTable(hasil);
-        document.getElementById('spinner').classList.add('hidden');
-        document.getElementById('prosesText').textContent = 'Proses';
-      }, 200);
+        filterData();
+        loadingSpinner.classList.add('hidden');
+      }, 300); // delay biar kelihatan loading
     });
 
-    document.getElementById('copy').addEventListener('click', () => {
-      const table = document.getElementById('table-wrap').innerText;
-      navigator.clipboard.writeText(table);
+    copyBtn.addEventListener('click', () => {
+      const text = tableWrap.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Hasil disalin ke clipboard');
+      });
     });
 
     fetchSheet();
   </script>
+
 </body>
 </html>
