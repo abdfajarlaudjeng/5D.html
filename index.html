@@ -73,24 +73,15 @@
   const clipboardBtns = document.getElementById('clipboardBtns');
 
   let lastFilteredRows = [];
-  let headers = [];
 
   async function fetchSheet() {
     const res = await fetch(gvizUrl);
     const text = await res.text();
     const jsonText = text.replace(/^.*setResponse\(|\);\s*$/gs, '');
-    const data = JSON.parse(jsonText).table;
-    headers = data.cols.slice(0,10).map(c => c.label || "");
-    return data.rows.map(r => {
-      const vals = [];
-      for(let i=0; i<10; i++) {
-        vals.push(r.c[i] && r.c[i].v !== null ? String(r.c[i].v) : "");
-      }
-      return vals;
-    });
+    return JSON.parse(jsonText).table;
   }
 
-  function filterData(rows) {
+  function filterData(table) {
     const kepalaInputRaw = document.getElementById('angkaKepala').value.trim();
     const ekorInputRaw = document.getElementById('angkaEkor').value.trim();
     const angkaMainList = document.getElementById('angkaMain').value
@@ -105,8 +96,10 @@
     const kepalaInput = kepalaInputRaw.split('').filter(c => /\d/.test(c));
     const ekorInput = ekorInputRaw.split('').filter(c => /\d/.test(c));
 
-    const allInputsEmpty = kepalaInput.length === 0 && ekorInput.length === 0 && angkaMainList.length === 0 && shioSelected.length === 0;
-    if (allInputsEmpty) return rows;
+    const rows = table.rows.map(r => r.c.map(c => c && c.v !== null ? String(c.v) : ""));
+
+    const noFilter = kepalaInput.length === 0 && ekorInput.length === 0 && angkaMainList.length === 0 && shioSelected.length === 0;
+    if (noFilter) return rows;
 
     return rows.filter(r => {
       const num = r[0];
@@ -115,13 +108,22 @@
       const kepala = num[3];
       const ekor = num[4];
 
-      if (kepalaInput.length > 0 && !kepalaInput.includes(kepala)) return false;
-      if (ekorInput.length > 0 && !ekorInput.includes(ekor)) return false;
+      // Flag cek input
+      let passKepala = true;
+      let passEkor = true;
+      let passMain = true;
 
-      if (angkaMainList.length > 0) {
-        const matchMain = angkaMainList.some(am => am.includes(kepala) || am.includes(ekor));
-        if (!matchMain) return false;
+      if (kepalaInput.length > 0) {
+        passKepala = kepalaInput.includes(kepala);
       }
+      if (ekorInput.length > 0) {
+        passEkor = ekorInput.includes(ekor);
+      }
+      if (angkaMainList.length > 0) {
+        passMain = angkaMainList.some(am => am.includes(kepala) || am.includes(ekor));
+      }
+
+      if (!passKepala || !passEkor || !passMain) return false;
 
       if (shioSelected.length > 0) {
         const duaDigit = num.slice(-2);
@@ -143,23 +145,9 @@
       return;
     }
     let html = "<table class='table-auto border-collapse w-full'>";
-    html += "<thead class='bg-gray-200'>";
-    html += "<tr>";
-    headers.forEach(h => {
-      html += `<th class='border px-3 py-2 text-center font-semibold'>${h}</th>`;
-    });
-    html += "</tr>";
-    html += "</thead>";
-
-    html += "<tbody>";
     rows.forEach(r => {
-      html += "<tr>";
-      for(let i=0; i<10; i++) {
-        html += `<td class='border px-3 py-2 text-center font-mono'>${r[i] || ""}</td>`;
-      }
-      html += "</tr>";
+      html += `<tr><td class='border px-3 py-2 text-center font-mono'>${r[0]}</td></tr>`;
     });
-    html += "</tbody>";
     html += "</table>";
     tableWrap.innerHTML = html;
     clipboardBtns.classList.remove('hidden');
@@ -169,11 +157,11 @@
     if (!lastFilteredRows.length) return;
     let text = "";
     if (mode === "all") {
-      text = lastFilteredRows.map(r => r.slice(0,10).join("\t")).join("\n");
+      text = lastFilteredRows.map(r => r[0]).join("\n");
     } else if (mode === "kepala") {
-      text = lastFilteredRows.map(r => (r[0] && r[0].length > 3 ? r[0][3] : "")).join("\n");
+      text = lastFilteredRows.map(r => r[0][3]).join("\n");
     } else if (mode === "ekor") {
-      text = lastFilteredRows.map(r => (r[0] && r[0].length > 4 ? r[0][4] : "")).join("\n");
+      text = lastFilteredRows.map(r => r[0][4]).join("\n");
     }
     navigator.clipboard.writeText(text).then(() => {
       notifEl.classList.remove('hidden');
