@@ -5,20 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sheet GABUNG — Tabel dari Google Sheets</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  </style>
 </head>
 <body class="bg-gray-100 p-6 font-sans">
-  <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-    <h1 class="text-2xl font-bold">Data: Sheet <span class="text-blue-600">GABUNG</span></h1>
-    <div class="flex gap-2">
-      <input id="q" type="search" placeholder="Cari..." class="border rounded-lg px-3 py-2 w-64" />
-      <button id="reload" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Muat ulang</button>
-      <button id="download" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">Download CSV</button>
-    </div>
+  <header class="mb-6">
+    <h1 class="text-2xl font-bold mb-4">Data: Sheet <span class="text-blue-600">GABUNG</span></h1>
+    <input id="q" type="search" placeholder="Cari bebas..." class="border rounded-lg px-3 py-2 w-64" />
   </header>
 
   <div class="bg-white p-4 rounded-lg shadow mb-6">
@@ -26,23 +17,20 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
       <div>
         <label for="angkaKepala" class="block mb-1 font-medium">Kepala</label>
-        <textarea id="angkaKepala" rows="3" placeholder="Masukkan angka kepala, pisahkan dengan spasi atau koma" class="w-full border rounded-lg px-3 py-2"></textarea>
+        <textarea id="angkaKepala" rows="3" placeholder="Masukkan angka kepala" class="w-full border rounded-lg px-3 py-2"></textarea>
       </div>
       <div>
         <label for="angkaEkor" class="block mb-1 font-medium">Ekor</label>
-        <textarea id="angkaEkor" rows="3" placeholder="Masukkan angka ekor, pisahkan dengan spasi atau koma" class="w-full border rounded-lg px-3 py-2"></textarea>
+        <textarea id="angkaEkor" rows="3" placeholder="Masukkan angka ekor" class="w-full border rounded-lg px-3 py-2"></textarea>
       </div>
     </div>
-    <button id="proses" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-      Proses
-    </button>
+    <button id="process" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Proses</button>
   </div>
 
-  <div class="text-sm text-gray-500 mb-4">
-    Sumber: Google Sheets (ID: <code>1AVLTOow3t_5vdBfa_S8hUNKo15vYpRYq8FZheRlallY</code>) — sheet: <code>GABUNG</code>
-  </div>
+  <div class="text-sm text-gray-500 mb-4">Sumber: Google Sheets (ID: <code>1AVLTOow3t_5vdBfa_S8hUNKo15vYpRYq8FZheRlallY</code>) — sheet: <code>GABUNG</code></div>
 
-  <div id="table-wrap" class="overflow-x-auto bg-white p-4 rounded-lg shadow"></div>
+  <div id="table-wrap" class="overflow-x-auto bg-white p-4 rounded-lg shadow mb-4"></div>
+  <button id="copy" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg hidden">Copy Hasil</button>
 
   <script>
     const SHEET_ID = '1AVLTOow3t_5vdBfa_S8hUNKo15vYpRYq8FZheRlallY';
@@ -50,12 +38,11 @@
     const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
 
     const tableWrap = document.getElementById('table-wrap');
-    const reloadBtn = document.getElementById('reload');
-    const downloadBtn = document.getElementById('download');
-    const prosesBtn = document.getElementById('proses');
     const qInput = document.getElementById('q');
     const kepalaInput = document.getElementById('angkaKepala');
     const ekorInput = document.getElementById('angkaEkor');
+    const processBtn = document.getElementById('process');
+    const copyBtn = document.getElementById('copy');
     let lastData = null;
 
     async function fetchSheet() {
@@ -66,104 +53,80 @@
         const jsonText = text.replace(/^.*setResponse\(|\);\s*$/gs, '');
         const obj = JSON.parse(jsonText);
         lastData = obj.table;
-        renderTable(lastData.rows.map(r => r.c.map(cell => cell?.v ?? '')), lastData.cols.map(c => c.label || c.id || ''));
+        renderTable(lastData);
       } catch (err) {
-        tableWrap.innerHTML = `<p class='text-red-600'>Gagal memuat. Pastikan spreadsheet dibagikan publik.<br><small>${err.message}</small></p>`;
+        tableWrap.innerHTML = `<p class='text-red-600'>Gagal memuat data<br><small>${err.message}</small></p>`;
         console.error(err);
       }
     }
 
-    function highlightCell(text, matches, color) {
-      let result = text;
-      matches.forEach(match => {
-        if (match && match.length > 0) {
-          const regex = new RegExp(`(${match})`, 'gi');
-          result = result.replace(regex, `<span style="background-color:${color}">$1</span>`);
+    function highlightCell(content, values, color) {
+      let html = content;
+      values.forEach(val => {
+        if (val && html.toLowerCase().includes(val)) {
+          const regex = new RegExp(`(${val})`, 'gi');
+          html = html.replace(regex, `<span class="bg-${color}-200">$1</span>`);
         }
       });
-      return result;
-    }
-
-    function setLoading(isLoading) {
-      if (isLoading) {
-        prosesBtn.disabled = true;
-        prosesBtn.classList.add("bg-gray-400", "cursor-not-allowed");
-        prosesBtn.classList.remove("bg-purple-500", "hover:bg-purple-600");
-        prosesBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-        </svg> Memproses...`;
-      } else {
-        prosesBtn.disabled = false;
-        prosesBtn.classList.remove("bg-gray-400", "cursor-not-allowed");
-        prosesBtn.classList.add("bg-purple-500", "hover:bg-purple-600");
-        prosesBtn.innerHTML = "Proses";
-      }
+      return html;
     }
 
     function applyFilter() {
       if (!lastData) return;
-      setLoading(true);
-      setTimeout(() => {
-        const searchQ = qInput.value.trim().toLowerCase();
-        const kepalaVals = kepalaInput.value.split(/[\s,]+/).map(v => v.trim().toLowerCase()).filter(Boolean);
-        const ekorVals = ekorInput.value.split(/[\s,]+/).map(v => v.trim().toLowerCase()).filter(Boolean);
+      const searchQ = qInput.value.trim().toLowerCase();
+      const kepalaVals = kepalaInput.value.split(/[\s,]+/).map(v => v.trim().toLowerCase()).filter(Boolean);
+      const ekorVals = ekorInput.value.split(/[\s,]+/).map(v => v.trim().toLowerCase()).filter(Boolean);
 
-        const cols = lastData.cols.map(c => c.label || c.id || '');
-        const kepalaIdx = cols.findIndex(c => c.toLowerCase().includes('kepala'));
-        const ekorIdx = cols.findIndex(c => c.toLowerCase().includes('ekor'));
+      const cols = lastData.cols.map(c => c.label || c.id || '');
+      const kepalaIdx = cols.findIndex(c => c.toLowerCase().includes('kepala'));
+      const ekorIdx = cols.findIndex(c => c.toLowerCase().includes('ekor'));
 
-        const rows = lastData.rows.map(r => r.c.map(cell => cell?.v != null ? String(cell.v) : ''));
+      let rows = lastData.rows.map(r => r.c.map(cell => cell && cell.v !== null ? String(cell.v) : ''));
 
-        const filtered = rows.filter(r => {
-          const textMatch = searchQ ? r.some(cell => cell.toLowerCase().includes(searchQ)) : true;
-          const kepalaMatch = kepalaVals.length && kepalaIdx >= 0
-            ? kepalaVals.some(val => r[kepalaIdx].toLowerCase().includes(val))
-            : true;
-          const ekorMatch = ekorVals.length && ekorIdx >= 0
-            ? ekorVals.some(val => r[ekorIdx].toLowerCase().includes(val))
-            : true;
-          return textMatch && kepalaMatch && ekorMatch;
-        });
+      const filtered = rows.filter(r => {
+        const textMatch = searchQ ? r.some(cell => cell.toLowerCase().includes(searchQ)) : true;
+        const kepalaMatch = kepalaVals.length && kepalaIdx >= 0
+          ? kepalaVals.some(val => r[kepalaIdx].toLowerCase().includes(val))
+          : true;
+        const ekorMatch = ekorVals.length && ekorIdx >= 0
+          ? ekorVals.some(val => r[ekorIdx].toLowerCase().includes(val))
+          : true;
+        return textMatch && kepalaMatch && ekorMatch;
+      });
 
-        const newCols = [...cols, 'Kepala*Ekor'];
-        const highlightedRows = filtered.map(r => {
-          const newRow = [...r];
-          if (kepalaIdx >= 0) newRow[kepalaIdx] = highlightCell(newRow[kepalaIdx], kepalaVals, '#a7f3d0');
-          if (ekorIdx >= 0) newRow[ekorIdx] = highlightCell(newRow[ekorIdx], ekorVals, '#bfdbfe');
-          if (searchQ) {
-            for (let i = 0; i < newRow.length; i++) {
-              newRow[i] = highlightCell(newRow[i], [searchQ], '#fef08a');
-            }
-          }
-          const gabungan = `${r[kepalaIdx] || ''}*${r[ekorIdx] || ''}`;
-          newRow.push(gabungan);
-          return newRow;
-        });
+      // Tambah kolom gabungan Kepala*Ekor
+      const newCols = [...cols, 'Gabungan'];
+      const newRows = filtered.map(r => {
+        const gabung = `${r[kepalaIdx] || ''}*${r[ekorIdx] || ''}`;
+        return [...r, gabung];
+      });
 
-        renderTable(highlightedRows, newCols);
-        setLoading(false);
-      }, 200); // jeda kecil supaya spinner terlihat
-    }
-
-    function renderTable(rows, cols) {
+      // Render tabel dengan highlight
       let html = `<table class='table-auto border-collapse w-full'>`;
-      html += `<thead><tr>${cols.map(h => `<th class='border px-3 py-2 bg-gray-100'>${h}</th>`).join('')}</tr></thead>`;
-      html += `<tbody>`;
-      rows.forEach(r => {
-        html += `<tr>${r.map(cell => `<td class='border px-3 py-2'>${cell}</td>`).join('')}</tr>`;
+      html += `<thead><tr>${newCols.map(h => `<th class='border px-3 py-2 bg-gray-100'>${h}</th>`).join('')}</tr></thead><tbody>`;
+      newRows.forEach(r => {
+        html += `<tr>${r.map((cell, idx) => {
+          let cellHTML = cell;
+          if (idx === kepalaIdx) cellHTML = highlightCell(cell, kepalaVals, 'green');
+          if (idx === ekorIdx) cellHTML = highlightCell(cell, ekorVals, 'blue');
+          return `<td class='border px-3 py-2'>${cellHTML}</td>`;
+        }).join('')}</tr>`;
       });
       html += `</tbody></table>`;
       tableWrap.innerHTML = html;
+
+      copyBtn.classList.remove('hidden');
+      copyBtn.onclick = () => {
+        const textData = [newCols.join('\t'), ...newRows.map(r => r.join('\t'))].join('\n');
+        navigator.clipboard.writeText(textData).then(() => {
+          const original = copyBtn.textContent;
+          copyBtn.textContent = 'Tersalin!';
+          setTimeout(() => copyBtn.textContent = original, 2000);
+        });
+      };
     }
 
-    reloadBtn.addEventListener('click', fetchSheet);
-    downloadBtn.addEventListener('click', () => {
-      const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
-      window.open(csvUrl, '_blank');
-    });
-    prosesBtn.addEventListener('click', applyFilter);
-
+    processBtn.addEventListener('click', applyFilter);
     fetchSheet();
   </script>
 </body>
