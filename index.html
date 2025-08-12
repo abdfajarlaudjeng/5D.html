@@ -80,9 +80,8 @@
     const text = await res.text();
     const jsonText = text.replace(/^.*setResponse\(|\);\s*$/gs, '');
     const data = JSON.parse(jsonText).table;
-    headers = data.cols.slice(0,10).map(c => c.label || ""); // Ambil label header kolom A-J
+    headers = data.cols.slice(0,10).map(c => c.label || "");
     return data.rows.map(r => {
-      // Pastikan ada 10 kolom
       const vals = [];
       for(let i=0; i<10; i++) {
         vals.push(r.c[i] && r.c[i].v !== null ? String(r.c[i].v) : "");
@@ -103,7 +102,6 @@
       .map(v => v.trim())
       .filter(v => v && shioMap[v]);
 
-    // Bersihkan input kepala dan ekor jadi array digit
     const kepalaInput = kepalaInputRaw.split('').filter(c => /\d/.test(c));
     const ekorInput = ekorInputRaw.split('').filter(c => /\d/.test(c));
 
@@ -145,7 +143,6 @@
       return;
     }
     let html = "<table class='table-auto border-collapse w-full'>";
-    // Render header
     html += "<thead class='bg-gray-200'>";
     html += "<tr>";
     headers.forEach(h => {
@@ -154,7 +151,6 @@
     html += "</tr>";
     html += "</thead>";
 
-    // Render body
     html += "<tbody>";
     rows.forEach(r => {
       html += "<tr>";
@@ -173,12 +169,11 @@
     if (!lastFilteredRows.length) return;
     let text = "";
     if (mode === "all") {
-      // Salin semua kolom A-J, dipisah tab per kolom dan newline per baris
       text = lastFilteredRows.map(r => r.slice(0,10).join("\t")).join("\n");
     } else if (mode === "kepala") {
-      text = lastFilteredRows.map(r => r[0][3] || "").join("\n");
+      text = lastFilteredRows.map(r => (r[0] && r[0].length > 3 ? r[0][3] : "")).join("\n");
     } else if (mode === "ekor") {
-      text = lastFilteredRows.map(r => r[0][4] || "").join("\n");
+      text = lastFilteredRows.map(r => (r[0] && r[0].length > 4 ? r[0][4] : "")).join("\n");
     }
     navigator.clipboard.writeText(text).then(() => {
       notifEl.classList.remove('hidden');
