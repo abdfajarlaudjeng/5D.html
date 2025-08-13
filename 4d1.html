@@ -1,100 +1,117 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Filter Angka 4D dengan Shio</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Filter 4D dengan Sidebar & Shio</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="flex bg-gray-100 min-h-screen">
+<body class="flex h-screen bg-gray-100">
 
   <!-- Sidebar -->
-  <aside class="w-64 bg-gray-800 text-white flex flex-col p-4">
-    <h2 class="text-xl font-bold mb-4">Menu</h2>
-    <nav class="flex flex-col space-y-2">
-      <a href="#" class="hover:bg-gray-700 p-2 rounded">Dashboard</a>
-      <a href="#" class="hover:bg-gray-700 p-2 rounded">Filter 4D</a>
-      <a href="#" class="hover:bg-gray-700 p-2 rounded">Pengaturan</a>
+  <aside class="w-64 bg-blue-800 text-white flex flex-col fixed h-full">
+    <div class="px-6 py-4 text-2xl font-bold border-b border-blue-700">
+      Menu
+    </div>
+    <nav class="flex-1 px-4 py-4 space-y-2">
+      <a href="#" class="block py-2 px-3 rounded hover:bg-blue-700">Dashboard</a>
+      <a href="#" class="block py-2 px-3 rounded hover:bg-blue-700">Filter 4D</a>
+      <a href="#" class="block py-2 px-3 rounded hover:bg-blue-700">Laporan</a>
     </nav>
   </aside>
 
   <!-- Main Content -->
-  <main class="flex-1 p-6">
-    <h1 class="text-2xl font-bold mb-4">Filter Angka 4D Berdasarkan Shio</h1>
+  <main class="ml-64 flex-1 p-6 overflow-auto">
+    <h1 class="text-2xl font-bold mb-4">Filter Data 4D dengan Shio</h1>
 
     <!-- Form Input -->
-    <div class="bg-white p-4 rounded shadow mb-6">
-      <label class="block mb-2 font-medium">Masukkan Angka Main (contoh: 1234)</label>
-      <input type="text" id="angkaMain" maxlength="4" class="border p-2 w-48 rounded" placeholder="1234">
-      <button onclick="prosesFilter()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded ml-2">Proses</button>
+    <div class="bg-white p-4 rounded shadow mb-4">
+      <label class="block font-semibold mb-2">Angka Main</label>
+      <input type="text" id="angkaMain" maxlength="4" placeholder="contoh: 1234"
+        class="border p-2 rounded w-40 mb-3" />
+
+      <div class="mb-3">
+        <span class="font-semibold">Kepala:</span> <span id="kepala" class="ml-2 text-blue-600 font-bold">-</span>
+        <span class="font-semibold ml-6">Ekor:</span> <span id="ekor" class="ml-2 text-red-600 font-bold">-</span>
+      </div>
+
+      <label class="block font-semibold mb-2">Filter Shio</label>
+      <select id="filterShio" class="border p-2 rounded w-40">
+        <option value="">Semua</option>
+        <option value="Tikus">Tikus</option>
+        <option value="Kerbau">Kerbau</option>
+        <option value="Macan">Macan</option>
+        <option value="Kelinci">Kelinci</option>
+        <option value="Naga">Naga</option>
+        <option value="Ular">Ular</option>
+        <option value="Kuda">Kuda</option>
+        <option value="Kambing">Kambing</option>
+        <option value="Monyet">Monyet</option>
+        <option value="Ayam">Ayam</option>
+        <option value="Anjing">Anjing</option>
+        <option value="Babi">Babi</option>
+      </select>
+
+      <button onclick="muatData()" class="ml-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Tampilkan</button>
     </div>
 
-    <!-- Tabel Hasil -->
-    <div class="bg-white p-4 rounded shadow">
-      <h2 class="text-lg font-semibold mb-4">Hasil Filter</h2>
-      <table class="min-w-full border border-gray-300">
+    <!-- Tabel -->
+    <div class="bg-white p-4 rounded shadow overflow-auto">
+      <table class="min-w-full border border-gray-300 text-sm">
         <thead>
           <tr class="bg-gray-200">
-            <th class="border px-4 py-2">No</th>
-            <th class="border px-4 py-2">Angka 4D</th>
-            <th class="border px-4 py-2">Shio</th>
+            <th class="border px-3 py-2">No</th>
+            <th class="border px-3 py-2">Angka 4D</th>
+            <th class="border px-3 py-2">Shio</th>
           </tr>
         </thead>
-        <tbody id="hasilTabel"></tbody>
+        <tbody id="tabelData"></tbody>
       </table>
     </div>
   </main>
 
-<script>
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/1jQWs8CTzPzibBDQ-btIexLE70oMqdhIFZOrnZ8dbEUQ/gviz/tq?tqx=out:json&sheet=4d";
+  <script>
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9SFg1QF5S98SGYlWcye4HqpjBL5Yg0p8-1Hl46n53nLBYc7zAGBzgmcPcGlyaL69A8H0ervsmsKAY/pub?gid=0&single=true&output=csv"; // Ganti dengan URL CSV Publish to Web dari Google Sheet
+    let kepala = "", ekor = "";
 
-function getShio(digit) {
-  const daftarShio = ["Tikus","Kerbau","Macan","Kelinci","Naga","Ular","Kuda","Kambing","Monyet","Ayam","Anjing","Babi"];
-  return daftarShio[digit % 12];
-}
+    document.getElementById("angkaMain").addEventListener("input", function () {
+      const val = this.value;
+      kepala = val.length >= 3 ? val.charAt(2) : "";
+      ekor = val.length >= 4 ? val.charAt(3) : "";
+      document.getElementById("kepala").textContent = kepala || "-";
+      document.getElementById("ekor").textContent = ekor || "-";
+    });
 
-async function ambilData() {
-  const res = await fetch(SHEET_URL);
-  const text = await res.text();
-  const json = JSON.parse(text.substr(47).slice(0, -2));
-  return json.table.rows.slice(1, 13).map(row => row.c[0]?.v?.toString() || "");
-}
+    function muatData() {
+      fetch(sheetURL)
+        .then(res => res.text())
+        .then(csv => {
+          const rows = csv.split("\n").slice(1, 13); // Ambil B2–B13
+          const filterShio = document.getElementById("filterShio").value;
+          let html = "";
+          let no = 1;
 
-async function prosesFilter() {
-  const angkaMain = document.getElementById("angkaMain").value;
-  if (angkaMain.length !== 4 || isNaN(angkaMain)) {
-    alert("Masukkan 4 digit angka valid!");
-    return;
-  }
+          rows.forEach(row => {
+            const cols = row.split(",");
+            const angka4d = cols[1] ? cols[1].trim() : ""; // Kolom B
+            const shio = cols[2] ? cols[2].trim() : ""; // Kolom C (asumsi shio)
 
-  const kepala = angkaMain[2];
-  const ekor = angkaMain[3];
+            if (angka4d && (!filterShio || shio === filterShio)) {
+              // Validasi: hanya tampilkan jika kepala & ekor sesuai
+              if ((kepala && angka4d.charAt(2) !== kepala) || (ekor && angka4d.charAt(3) !== ekor)) {
+                return;
+              }
+              html += `<tr>
+                <td class="border px-3 py-1">${no++}</td>
+                <td class="border px-3 py-1 font-bold">${angka4d}</td>
+                <td class="border px-3 py-1">${shio}</td>
+              </tr>`;
+            }
+          });
 
-  const data = await ambilData();
-  const hasil = data
-    .map((angka, index) => {
-      const shio = getShio(parseInt(angka.slice(-2), 10));
-      return { no: index + 1, angka, shio };
-    })
-    .filter(item => item.angka[2] === kepala && item.angka[3] === ekor);
-
-  tampilkanHasil(hasil);
-}
-
-function tampilkanHasil(data) {
-  const tbody = document.getElementById("hasilTabel");
-  tbody.innerHTML = "";
-  data.forEach(item => {
-    tbody.innerHTML += `
-      <tr>
-        <td class="border px-4 py-2">${item.no}</td>
-        <td class="border px-4 py-2">${item.angka}</td>
-        <td class="border px-4 py-2">${item.shio}</td>
-      </tr>
-    `;
-  });
-}
-</script>
-
+          document.getElementById("tabelData").innerHTML = html || `<tr><td colspan="3" class="text-center py-2">Tidak ada data</td></tr>`;
+        });
+    }
+  </script>
 </body>
 </html>
