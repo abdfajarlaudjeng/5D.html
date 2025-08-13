@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Validasi & Filter Angka</title>
+<style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    /* Navbar */
+    .navbar {
+        background-color: #333;
+        overflow: hidden;
+    }
+    .navbar a {
+        float: left;
+        display: block;
+        color: #fff;
+        text-align: center;
+        padding: 14px 20px;
+        text-decoration: none;
+    }
+    .navbar a:hover {
+        background-color: #575757;
+    }
+    /* Konten */
+    .container {
+        padding: 20px;
+    }
+    textarea, input, select {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+    }
+    .hasil {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f0f0f0;
+    }
+    button {
+        padding: 8px 12px;
+        margin-right: 5px;
+        cursor: pointer;
+    }
+    .hide { display: none; }
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<div class="navbar">
+    <a href="#" onclick="showTab('tab5d')">Angka 5D</a>
+    <a href="#" onclick="showTab('tabShio')">SHIO Main</a>
+    <a href="#" onclick="showTab('tabMain')">Angka Main</a>
+</div>
+
+<!-- Tab Angka 5D -->
+<div id="tab5d" class="container">
+<h2>Validasi Angka 5D</h2>
+<textarea id="angka5d" rows="4" placeholder="Contoh: 12345*54321*67890"></textarea>
+
+<label>Filter Kepala (digit ke-4):</label>
+<input type="text" id="kepala" maxlength="6" placeholder="Maksimal 6 digit angka">
+
+<label>Filter Ekor (digit ke-5):</label>
+<input type="text" id="ekor" maxlength="6" placeholder="Maksimal 6 digit angka">
+
+<button onclick="filterAngka5d()">Validasi</button>
+<button onclick="salinHasil('hasil5d')">Salin ke Clipboard</button>
+
+<div class="hasil" id="hasil5d"></div>
+</div>
+
+<!-- Tab SHIO Main -->
+<div id="tabShio" class="container hide">
+<h2>Filter SHIO Main</h2>
+<select id="shio">
+    <option value="">Semua</option>
+    <option value="tikus">Tikus</option>
+    <option value="kerbau">Kerbau</option>
+    <option value="harimau">Harimau</option>
+    <option value="kelinci">Kelinci</option>
+    <option value="naga">Naga</option>
+    <option value="ular">Ular</option>
+    <option value="kuda">Kuda</option>
+    <option value="kambing">Kambing</option>
+    <option value="monyet">Monyet</option>
+    <option value="ayam">Ayam</option>
+    <option value="anjing">Anjing</option>
+    <option value="babi">Babi</option>
+</select>
+<button onclick="filterShio()">Filter</button>
+<div class="hasil" id="hasilShio"></div>
+</div>
+
+<!-- Tab Angka Main -->
+<div id="tabMain" class="container hide">
+<h2>Filter Angka Main</h2>
+<textarea id="angkaMain" rows="4" placeholder="Contoh: 12 34 56"></textarea>
+<button onclick="filterAngkaMain()">Filter</button>
+<div class="hasil" id="hasilMain"></div>
+</div>
+
+<script>
+let angkaData = [];
+let shioList = ["tikus","kerbau","harimau","kelinci","naga","ular","kuda","kambing","monyet","ayam","anjing","babi"];
+
+// Ambil data dari file 5D.txt
+fetch("5D.txt")
+    .then(res => res.text())
+    .then(text => {
+        angkaData = text.split("*").map(a => a.trim()).filter(a => a.length === 5 && /^\d+$/.test(a));
+    });
+
+function showTab(tabId) {
+    document.querySelectorAll('.container').forEach(c => c.classList.add('hide'));
+    document.getElementById(tabId).classList.remove('hide');
+}
+
+function filterAngka5d() {
+    let kepalaFilter = document.getElementById("kepala").value.trim();
+    let ekorFilter = document.getElementById("ekor").value.trim();
+    let hasilDiv = document.getElementById("hasil5d");
+
+    let hasil = angkaData.filter(angka => {
+        let kepala = angka.charAt(3);
+        let ekor = angka.charAt(4);
+        let cocokKepala = kepalaFilter ? kepalaFilter.includes(kepala) : true;
+        let cocokEkor = ekorFilter ? ekorFilter.includes(ekor) : true;
+        return cocokKepala && cocokEkor;
+    });
+
+    if (hasil.length) {
+        hasilDiv.innerHTML = `<b>Hasil:</b> ${hasil.join(" * ")}<br><br><b>Total:</b> ${hasil.length} angka`;
+    } else {
+        hasilDiv.innerHTML = "<b>Tidak ada angka yang cocok.</b>";
+    }
+}
+
+function filterShio() {
+    let shioVal = document.getElementById("shio").value;
+    let hasilDiv = document.getElementById("hasilShio");
+
+    let hasil = angkaData.filter(num => {
+        let shioIndex = parseInt(num.slice(-2)) % 12;
+        return shioVal ? shioList[shioIndex] === shioVal : true;
+    });
+
+    hasilDiv.innerHTML = hasil.length ?
+        `<b>Hasil:</b> ${hasil.join(" * ")}<br><br><b>Total:</b> ${hasil.length} angka` :
+        "<b>Tidak ada angka yang cocok.</b>";
+}
+
+function filterAngkaMain() {
+    let angkaMainVal = document.getElementById("angkaMain").value.trim();
+    let angkaMainArr = angkaMainVal ? angkaMainVal.split(/[\s,]+/).filter(x => x) : [];
+    let hasilDiv = document.getElementById("hasilMain");
+
+    let hasil = angkaData.filter(num => {
+        let kepala = num.charAt(0);
+        let ekor = num.charAt(4);
+        return angkaMainArr.length > 0 ? angkaMainArr.includes(kepala) || angkaMainArr.includes(ekor) : true;
+    });
+
+    hasilDiv.innerHTML = hasil.length ?
+        `<b>Hasil:</b> ${hasil.join(" * ")}<br><br><b>Total:</b> ${hasil.length} angka` :
+        "<b>Tidak ada angka yang cocok.</b>";
+}
+
+function salinHasil(idDiv) {
+    let hasilText = document.getElementById(idDiv).innerText.replace(/^Hasil:\s*/i, "");
+    if (!hasilText || hasilText.includes("Tidak ada angka")) {
+        alert("Tidak ada hasil yang bisa disalin!");
+        return;
+    }
+    navigator.clipboard.writeText(hasilText).then(() => {
+        alert("Hasil berhasil disalin ke clipboard!");
+    });
+}
+</script>
+
+</body>
+</html>
