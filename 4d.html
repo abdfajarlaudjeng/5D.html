@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Validasi Angka 4D & SHIO</title>
+<style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .navbar { background-color: #333; overflow: hidden; }
+    .navbar a {
+        float: left; display: block; color: white; text-align: center;
+        padding: 14px 20px; text-decoration: none;
+    }
+    .navbar a:hover { background-color: #575757; }
+    .container { padding: 20px; }
+    textarea, select, input { width: 100%; padding: 8px; margin: 5px 0; }
+    button { padding: 8px 12px; margin: 5px 5px 5px 0; cursor: pointer; }
+    .hasil { margin-top: 10px; padding: 10px; background: #f0f0f0; }
+    .hide { display: none; }
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<div class="navbar">
+    <a href="#" onclick="showTab('tab4d')">Angka 4D</a>
+    <a href="#" onclick="showTab('tabShio')">SHIO Main</a>
+    <a href="#" onclick="showTab('tabMain')">Angka Main</a>
+</div>
+
+<!-- Konten -->
+<div class="container">
+
+    <!-- TAB ANGKA 4D -->
+    <div id="tab4d">
+        <h2>Validasi Angka 4D</h2>
+        <label>Masukkan Angka 4D (pisahkan dengan * tanpa spasi):</label>
+        <textarea id="angka4d" rows="4" placeholder="Contoh: 1234*4321*6789"></textarea>
+        <label>Filter Kepala (digit ke-3):</label>
+        <input type="text" id="kepala" maxlength="6" placeholder="Maksimal 6 digit angka">
+        <label>Filter Ekor (digit ke-4):</label>
+        <input type="text" id="ekor" maxlength="6" placeholder="Maksimal 6 digit angka">
+        <button onclick="filterAngka4D()">Validasi</button>
+        <button onclick="salinHasil('hasil4d')">Salin ke Clipboard</button>
+        <div class="hasil" id="hasil4d"></div>
+    </div>
+
+    <!-- TAB SHIO MAIN -->
+    <div id="tabShio" class="hide">
+        <h2>Filter Angka 4D Berdasarkan SHIO</h2>
+        <label>Pilih SHIO:</label>
+        <select id="shioSelect">
+            <option value="">-- Pilih SHIO --</option>
+            <option value="01">01</option>
+            <option value="02">02</option>
+            <option value="03">03</option>
+            <option value="04">04</option>
+            <option value="05">05</option>
+            <option value="06">06</option>
+            <option value="07">07</option>
+            <option value="08">08</option>
+            <option value="09">09</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+        </select>
+        <label>Masukkan Angka 4D (pisahkan dengan * tanpa spasi):</label>
+        <textarea id="angka4dShio" rows="4" placeholder="Contoh: 1234*4321*6789"></textarea>
+        <button onclick="filterShio()">Validasi</button>
+        <button onclick="salinHasil('hasilShio')">Salin ke Clipboard</button>
+        <div class="hasil" id="hasilShio"></div>
+    </div>
+
+    <!-- TAB ANGKA MAIN -->
+    <div id="tabMain" class="hide">
+        <h2>Angka Main (Coming Soon)</h2>
+        <p>Fitur ini bisa ditambahkan nanti sesuai kebutuhan.</p>
+    </div>
+
+</div>
+
+<script>
+// Data SHIO → Daftar 2D
+const shioMap = {
+    "01": "00*02*04*05*06*07*08*09*11*14*16*17*18*19*20*21*23*26*28*29*30*31*32*33*35*38*40*41*42*43*44*45*47*50*52*53*54*55*56*57*59*62*64*65*66*67*68*69*71*74*76*77*78*79*80*81*83*86*88*89*90*91*92*93*95*98*",
+    "02": "03*05*06*07*08*09*10*12*15*17*18*19*20*21*22*24*27*29*30*31*32*33*34*36*39*41*42*43*44*45*46*48*51*53*54*55*56*57*58*60*63*65*66*67*68*69*70*72*75*77*78*79*80*81*82*84*87*89*90*91*92*93*94*96*99*",
+    "03": "00*01*04*06*07*08*09*10*11*13*16*18*19*20*21*22*23*25*28*30*31*32*33*34*35*37*40*42*43*44*45*46*47*49*52*54*55*56*57*58*59*61*64*66*67*68*69*70*71*73*76*78*79*80*81*82*83*85*88*90*91*92*93*94*95*97*",
+    "04": "01*02*07*08*09*10*11*12*13*14*19*20*21*22*23*24*25*26*31*32*33*34*35*36*37*38*43*44*45*46*47*48*49*50*55*56*57*58*59*60*61*62*67*68*69*70*71*72*73*74*79*80*81*82*83*84*85*86*91*92*93*94*95*96*97*98*",
+    "05": "01*06*07*08*09*10*11*12*13*18*19*20*21*22*23*24*25*30*31*32*33*34*35*36*37*42*43*44*45*46*47*48*49*54*55*56*57*58*59*60*61*66*67*68*69*70*71*72*73*78*79*80*81*82*83*84*85*90*91*92*93*94*95*96*97*",
+    "06": "00*01*02*04*05*07*10*11*12*13*14*16*17*19*22*23*24*25*26*28*29*31*34*35*36*37*38*40*41*43*46*47*48*49*50*52*53*55*58*59*60*61*62*64*65*67*70*71*72*73*74*76*77*79*82*83*84*85*86*88*89*91*94*95*96*97*98*",
+    "07": "00*01*02*04*05*09*10*11*12*13*14*16*17*21*22*23*24*25*26*28*29*33*34*35*36*37*38*40*41*45*46*47*48*49*50*52*53*57*58*59*60*61*62*64*65*69*70*71*72*73*74*76*77*81*82*83*84*85*86*88*89*93*94*95*96*97*98*",
+    "08": "00*01*02*03*04*06*09*11*12*13*14*15*16*18*21*23*24*25*26*27*28*30*33*35*36*37*38*39*40*42*45*47*48*49*50*51*52*54*57*59*60*61*62*63*64*66*69*71*72*73*74*75*76*78*81*83*84*85*86*87*88*90*93*95*96*97*98*99*",
+    "09": "00*01*02*03*04*07*08*10*11*13*14*15*16*19*20*22*23*25*26*27*28*31*32*34*35*37*38*39*40*43*44*46*47*49*50*51*52*55*56*58*59*61*62*63*64*67*68*70*71*73*74*75*76*79*80*82*83*85*86*87*88*91*92*94*95*97*98*99*",
+    "10": "00*01*02*03*04*05*06*08*11*13*14*15*16*17*18*20*23*25*26*27*28*29*30*32*35*37*38*39*40*41*42*44*47*49*50*51*52*53*54*56*59*61*62*63*64*65*66*68*71*73*74*75*76*77*78*80*83*85*86*87*88*89*90*92*95*97*98*99*",
+    "11": "00*02*03*04*05*06*07*09*12*14*15*16*17*18*19*21*24*26*27*28*29*30*31*33*36*38*39*40*41*42*43*45*48*50*51*52*53*54*55*57*60*62*63*64*65*66*67*69*72*74*75*76*77*78*79*81*84*86*87*88*89*90*91*93*96*98*99*",
+    "12": "00*03*04*05*06*07*08*09*10*15*16*17*18*19*20*21*22*27*28*29*30*31*32*33*34*39*40*41*42*43*44*45*46*51*52*53*54*55*56*57*58*63*64*65*66*67*68*69*70*75*76*77*78*79*80*81*82*87*88*89*90*91*92*93*94*99*"
+};
+
+// Tab switch
+function showTab(id) {
+    document.querySelectorAll('.container > div').forEach(div => div.classList.add('hide'));
+    document.getElementById(id).classList.remove('hide');
+}
+
+// Filter angka 4D
+function filterAngka4D() {
+    let input4d = document.getElementById("angka4d").value.trim();
+    let kepalaFilter = document.getElementById("kepala").value.trim();
+    let ekorFilter = document.getElementById("ekor").value.trim();
+    let hasilDiv = document.getElementById("hasil4d");
+
+    if (!input4d) {
+        hasilDiv.innerHTML = "<b>Masukkan angka 4D terlebih dahulu!</b>";
+        return;
+    }
+
+    let angkaArray = input4d.split("*").map(a => a.trim()).filter(a => a.length === 4 && /^\d+$/.test(a));
+
+    let hasil = angkaArray.filter(angka => {
+        let kepala = angka.charAt(2); // digit ke-3
+        let ekor = angka.charAt(3);   // digit ke-4
+        let cocokKepala = kepalaFilter ? kepalaFilter.includes(kepala) : true;
+        let cocokEkor = ekorFilter ? ekorFilter.includes(ekor) : true;
+        return cocokKepala && cocokEkor;
+    });
+
+    if (hasil.length) {
+        hasilDiv.innerHTML = `<b>Hasil:</b> ${hasil.join(" * ")}<br><br><b>Total:</b> ${hasil.length} angka`;
+    } else {
+        hasilDiv.innerHTML = "<b>Tidak ada angka yang cocok.</b>";
+    }
+}
+
+// Filter SHIO
+function filterShio() {
+    let shioVal = document.getElementById("shioSelect").value;
+    let input4d = document.getElementById("angka4dShio").value.trim();
+    let hasilDiv = document.getElementById("hasilShio");
+
+    if (!shioVal) {
+        hasilDiv.innerHTML = "<b>Pilih SHIO terlebih dahulu!</b>";
+        return;
+    }
+    if (!input4d) {
+        hasilDiv.innerHTML = "<b>Masukkan angka 4D terlebih dahulu!</b>";
+        return;
+    }
+
+    let list2D = shioMap[shioVal].split("*").filter(x => x.length === 2);
+    let angkaArray = input4d.split("*").map(a => a.trim()).filter(a => a.length === 4 && /^\d+$/.test(a));
+
+    let hasil = angkaArray.filter(angka => list2D.includes(angka.slice(-2)));
+
+    if (hasil.length) {
+        hasilDiv.innerHTML = `<b>Hasil:</b> ${hasil.join(" * ")}<br><br><b>Total:</b> ${hasil.length} angka`;
+    } else {
+        hasilDiv.innerHTML = "<b>Tidak ada angka yang cocok.</b>";
+    }
+}
+
+// Salin hasil
+function salinHasil(id) {
+    let hasilText = document.getElementById(id).innerText.replace(/^Hasil:\s*/i, "");
+    if (!hasilText || hasilText.includes("Tidak ada angka")) {
+        alert("Tidak ada hasil yang bisa disalin!");
+        return;
+    }
+    navigator.clipboard.writeText(hasilText).then(() => {
+        alert("Hasil berhasil disalin ke clipboard!");
+    }).catch(() => {
+        alert("Gagal menyalin ke clipboard.");
+    });
+}
+</script>
+
+</body>
+</html>
