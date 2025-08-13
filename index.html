@@ -7,38 +7,52 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f5f5f5;
+      background: #f0f0f0;
       padding: 20px;
     }
     .container {
       background: #fff;
       padding: 20px;
-      border-radius: 8px;
-      max-width: 500px;
+      max-width: 600px;
       margin: auto;
+      border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
-    textarea, input, button {
+    textarea, input {
       width: 100%;
-      padding: 8px;
-      margin: 8px 0;
+      padding: 10px;
+      margin-top: 8px;
+      margin-bottom: 12px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
       font-size: 16px;
     }
     button {
+      padding: 10px 20px;
       background: #28a745;
       color: white;
       border: none;
+      border-radius: 5px;
       cursor: pointer;
+      font-size: 16px;
     }
     button:hover {
       background: #218838;
     }
-    .result {
+    .hasil {
       margin-top: 15px;
       padding: 10px;
-      background: #e9ecef;
+      background: #f8f9fa;
+      border: 1px solid #ccc;
       border-radius: 5px;
-      min-height: 40px;
+    }
+    .valid {
+      color: green;
+      font-weight: bold;
+    }
+    .invalid {
+      color: red;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -46,37 +60,40 @@
 
 <div class="container">
   <h2>Validasi Angka 5D</h2>
-  <label>Masukkan angka 5D (pisahkan dengan spasi atau enter):</label>
-  <textarea id="angkaList" rows="5" placeholder="contoh: 12345 23456 34567"></textarea>
 
-  <label>Masukkan angka main:</label>
-  <input type="text" id="angkaMain" maxlength="5" placeholder="contoh: 1234">
+  <label>Masukkan Angka Main:</label>
+  <input type="text" id="angkaMain" placeholder="contoh: 1234" maxlength="5">
+
+  <label>Masukkan Angka 5D (pisahkan dengan tanda * tanpa spasi):</label>
+  <textarea id="angka5D" placeholder="contoh: 12345*54321*67890"></textarea>
 
   <button onclick="validasiAngka()">Validasi</button>
 
-  <div class="result" id="hasil"></div>
+  <div class="hasil" id="hasil"></div>
 </div>
 
 <script>
 function validasiAngka() {
-  let list = document.getElementById("angkaList").value.trim().split(/\s+/);
-  let main = document.getElementById("angkaMain").value.trim();
-  let hasilDiv = document.getElementById("hasil");
+    let angkaMain = document.getElementById("angkaMain").value.trim();
+    let angkaInput = document.getElementById("angka5D").value.trim();
+    let hasilDiv = document.getElementById("hasil");
 
-  if (!main) {
-    hasilDiv.innerHTML = "⚠ Masukkan angka main terlebih dahulu.";
-    return;
-  }
+    if (!angkaMain || !angkaInput) {
+        hasilDiv.innerHTML = "<span class='invalid'>Masukkan angka main dan angka 5D!</span>";
+        return;
+    }
 
-  let hasil = list.filter(angka => {
-    return main.split("").every(d => angka.includes(d));
-  });
+    // Pisahkan berdasarkan tanda *
+    let daftarAngka = angkaInput.split("*");
 
-  if (hasil.length > 0) {
-    hasilDiv.innerHTML = "✅ Angka cocok:<br>" + hasil.join(", ");
-  } else {
-    hasilDiv.innerHTML = "❌ Tidak ada angka yang cocok.";
-  }
+    // Filter hanya angka valid 5 digit dan mengandung angka main
+    let hasilValid = daftarAngka.filter(num => num.length === 5 && num.includes(angkaMain));
+
+    if (hasilValid.length > 0) {
+        hasilDiv.innerHTML = "<span class='valid'>Angka Cocok:</span> " + hasilValid.join(" * ");
+    } else {
+        hasilDiv.innerHTML = "<span class='invalid'>Tidak ada angka yang cocok.</span>";
+    }
 }
 </script>
 
