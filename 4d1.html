@@ -3,115 +3,111 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Filter 4D dengan Sidebar & Shio</title>
+  <title>Filter 4D dengan Sidebar</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: sans-serif; }
+    .sidebar { width: 220px; }
+    .content { margin-left: 220px; padding: 1rem; }
+  </style>
 </head>
-<body class="flex h-screen bg-gray-100">
+<body class="bg-gray-100">
 
   <!-- Sidebar -->
-  <aside class="w-64 bg-blue-800 text-white flex flex-col fixed h-full">
-    <div class="px-6 py-4 text-2xl font-bold border-b border-blue-700">
-      Menu
-    </div>
-    <nav class="flex-1 px-4 py-4 space-y-2">
-      <a href="#" class="block py-2 px-3 rounded hover:bg-blue-700">Dashboard</a>
-      <a href="#" class="block py-2 px-3 rounded hover:bg-blue-700">Filter 4D</a>
-      <a href="#" class="block py-2 px-3 rounded hover:bg-blue-700">Laporan</a>
-    </nav>
-  </aside>
+  <div class="sidebar fixed top-0 left-0 h-full bg-gray-800 text-white p-4">
+    <h2 class="text-lg font-bold mb-4">Menu</h2>
+    <ul>
+      <li class="mb-2"><a href="#" class="hover:underline">Dashboard</a></li>
+      <li class="mb-2"><a href="#" class="hover:underline">Filter 4D</a></li>
+      <li class="mb-2"><a href="#" class="hover:underline">Data Lain</a></li>
+    </ul>
+  </div>
 
   <!-- Main Content -->
-  <main class="ml-64 flex-1 p-6 overflow-auto">
-    <h1 class="text-2xl font-bold mb-4">Filter Data 4D dengan Shio</h1>
+  <div class="content">
+    <h1 class="text-2xl font-bold mb-4">Filter Data 4D</h1>
 
-    <!-- Form Input -->
-    <div class="bg-white p-4 rounded shadow mb-4">
-      <label class="block font-semibold mb-2">Angka Main</label>
-      <input type="text" id="angkaMain" maxlength="4" placeholder="contoh: 1234"
-        class="border p-2 rounded w-40 mb-3" />
+    <!-- Input Angka Main -->
+    <label class="block font-semibold mb-2">Input Angka Main (max 6 digit per baris, 10 baris):</label>
+    <textarea id="angkaMain" rows="10" maxlength="60" 
+      class="w-full border border-gray-300 p-2 rounded mb-4"
+      placeholder="Masukkan angka (contoh: 123456)"
+    ></textarea>
 
-      <div class="mb-3">
-        <span class="font-semibold">Kepala:</span> <span id="kepala" class="ml-2 text-blue-600 font-bold">-</span>
-        <span class="font-semibold ml-6">Ekor:</span> <span id="ekor" class="ml-2 text-red-600 font-bold">-</span>
-      </div>
+    <!-- Filter Shio -->
+    <label class="block font-semibold mb-2">Filter Shio:</label>
+    <select id="filterShio" class="w-full border border-gray-300 p-2 rounded mb-4">
+      <option value="">Semua Shio</option>
+      <option value="Tikus">Tikus</option>
+      <option value="Kerbau">Kerbau</option>
+      <option value="Macan">Macan</option>
+      <!-- Tambah shio lainnya -->
+    </select>
 
-      <label class="block font-semibold mb-2">Filter Shio</label>
-      <select id="filterShio" class="border p-2 rounded w-40">
-        <option value="">Semua</option>
-        <option value="Tikus">Tikus</option>
-        <option value="Kerbau">Kerbau</option>
-        <option value="Macan">Macan</option>
-        <option value="Kelinci">Kelinci</option>
-        <option value="Naga">Naga</option>
-        <option value="Ular">Ular</option>
-        <option value="Kuda">Kuda</option>
-        <option value="Kambing">Kambing</option>
-        <option value="Monyet">Monyet</option>
-        <option value="Ayam">Ayam</option>
-        <option value="Anjing">Anjing</option>
-        <option value="Babi">Babi</option>
-      </select>
+    <!-- Tombol Proses -->
+    <button id="btnProses" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Proses</button>
 
-      <button onclick="muatData()" class="ml-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Tampilkan</button>
-    </div>
-
-    <!-- Tabel -->
-    <div class="bg-white p-4 rounded shadow overflow-auto">
-      <table class="min-w-full border border-gray-300 text-sm">
-        <thead>
-          <tr class="bg-gray-200">
-            <th class="border px-3 py-2">No</th>
-            <th class="border px-3 py-2">Angka 4D</th>
-            <th class="border px-3 py-2">Shio</th>
+    <!-- Tabel Hasil -->
+    <div class="mt-6 overflow-x-auto">
+      <table class="w-full border border-gray-300">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="border border-gray-300 px-3 py-2">No</th>
+            <th class="border border-gray-300 px-3 py-2">Angka 4D</th>
+            <th class="border border-gray-300 px-3 py-2">Shio</th>
           </tr>
         </thead>
-        <tbody id="tabelData"></tbody>
+        <tbody id="tabelHasil"></tbody>
       </table>
     </div>
-  </main>
+  </div>
 
   <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9SFg1QF5S98SGYlWcye4HqpjBL5Yg0p8-1Hl46n53nLBYc7zAGBzgmcPcGlyaL69A8H0ervsmsKAY/pub?gid=0&single=true&output=csv"; // Ganti dengan URL CSV Publish to Web dari Google Sheet
-    let kepala = "", ekor = "";
+    const textarea = document.getElementById("angkaMain");
 
-    document.getElementById("angkaMain").addEventListener("input", function () {
-      const val = this.value;
-      kepala = val.length >= 3 ? val.charAt(2) : "";
-      ekor = val.length >= 4 ? val.charAt(3) : "";
-      document.getElementById("kepala").textContent = kepala || "-";
-      document.getElementById("ekor").textContent = ekor || "-";
+    textarea.addEventListener("input", () => {
+      let lines = textarea.value.split("\n").map(line => {
+        // Hanya angka dan maksimal 6 digit per baris
+        let angka = line.replace(/\D/g, "").slice(0, 6);
+        return angka;
+      });
+
+      // Batasi maksimal 10 baris
+      if (lines.length > 10) {
+        lines = lines.slice(0, 10);
+      }
+
+      textarea.value = lines.join("\n");
     });
 
-    function muatData() {
-      fetch(sheetURL)
-        .then(res => res.text())
-        .then(csv => {
-          const rows = csv.split("\n").slice(1, 13); // Ambil B2–B13
-          const filterShio = document.getElementById("filterShio").value;
-          let html = "";
-          let no = 1;
-
-          rows.forEach(row => {
-            const cols = row.split(",");
-            const angka4d = cols[1] ? cols[1].trim() : ""; // Kolom B
-            const shio = cols[2] ? cols[2].trim() : ""; // Kolom C (asumsi shio)
-
-            if (angka4d && (!filterShio || shio === filterShio)) {
-              // Validasi: hanya tampilkan jika kepala & ekor sesuai
-              if ((kepala && angka4d.charAt(2) !== kepala) || (ekor && angka4d.charAt(3) !== ekor)) {
-                return;
-              }
-              html += `<tr>
-                <td class="border px-3 py-1">${no++}</td>
-                <td class="border px-3 py-1 font-bold">${angka4d}</td>
-                <td class="border px-3 py-1">${shio}</td>
-              </tr>`;
-            }
+    document.getElementById("btnProses").addEventListener("click", () => {
+      const dataInput = textarea.value.split("\n").filter(l => l.trim() !== "");
+      const shioFilter = document.getElementById("filterShio").value;
+      
+      // Ambil data dari Google Sheet
+      fetch("URL_JSON_GOOGLE_SHEET")
+        .then(res => res.json())
+        .then(data => {
+          let hasil = data.filter(item => {
+            let cocok = dataInput.includes(item[0]);
+            let shioCocok = !shioFilter || item[1] === shioFilter;
+            return cocok && shioCocok;
           });
 
-          document.getElementById("tabelData").innerHTML = html || `<tr><td colspan="3" class="text-center py-2">Tidak ada data</td></tr>`;
+          const tbody = document.getElementById("tabelHasil");
+          tbody.innerHTML = "";
+          hasil.forEach((row, i) => {
+            tbody.innerHTML += `
+              <tr>
+                <td class="border border-gray-300 px-3 py-2">${i+1}</td>
+                <td class="border border-gray-300 px-3 py-2">${row[0]}</td>
+                <td class="border border-gray-300 px-3 py-2">${row[1]}</td>
+              </tr>
+            `;
+          });
         });
-    }
+    });
   </script>
+
 </body>
 </html>
