@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filter Angka 4D dengan Shio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex bg-gray-100 min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-gray-800 text-white flex flex-col p-4">
+    <h2 class="text-xl font-bold mb-4">Menu</h2>
+    <nav class="flex flex-col space-y-2">
+      <a href="#" class="hover:bg-gray-700 p-2 rounded">Dashboard</a>
+      <a href="#" class="hover:bg-gray-700 p-2 rounded">Filter 4D</a>
+      <a href="#" class="hover:bg-gray-700 p-2 rounded">Pengaturan</a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-6">
+    <h1 class="text-2xl font-bold mb-4">Filter Angka 4D Berdasarkan Shio</h1>
+
+    <!-- Form Input -->
+    <div class="bg-white p-4 rounded shadow mb-6">
+      <label class="block mb-2 font-medium">Masukkan Angka Main (contoh: 1234)</label>
+      <input type="text" id="angkaMain" maxlength="4" class="border p-2 w-48 rounded" placeholder="1234">
+      <button onclick="prosesFilter()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded ml-2">Proses</button>
+    </div>
+
+    <!-- Tabel Hasil -->
+    <div class="bg-white p-4 rounded shadow">
+      <h2 class="text-lg font-semibold mb-4">Hasil Filter</h2>
+      <table class="min-w-full border border-gray-300">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="border px-4 py-2">No</th>
+            <th class="border px-4 py-2">Angka 4D</th>
+            <th class="border px-4 py-2">Shio</th>
+          </tr>
+        </thead>
+        <tbody id="hasilTabel"></tbody>
+      </table>
+    </div>
+  </main>
+
+<script>
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1jQWs8CTzPzibBDQ-btIexLE70oMqdhIFZOrnZ8dbEUQ/gviz/tq?tqx=out:json&sheet=4d";
+
+function getShio(digit) {
+  const daftarShio = ["Tikus","Kerbau","Macan","Kelinci","Naga","Ular","Kuda","Kambing","Monyet","Ayam","Anjing","Babi"];
+  return daftarShio[digit % 12];
+}
+
+async function ambilData() {
+  const res = await fetch(SHEET_URL);
+  const text = await res.text();
+  const json = JSON.parse(text.substr(47).slice(0, -2));
+  return json.table.rows.slice(1, 13).map(row => row.c[0]?.v?.toString() || "");
+}
+
+async function prosesFilter() {
+  const angkaMain = document.getElementById("angkaMain").value;
+  if (angkaMain.length !== 4 || isNaN(angkaMain)) {
+    alert("Masukkan 4 digit angka valid!");
+    return;
+  }
+
+  const kepala = angkaMain[2];
+  const ekor = angkaMain[3];
+
+  const data = await ambilData();
+  const hasil = data
+    .map((angka, index) => {
+      const shio = getShio(parseInt(angka.slice(-2), 10));
+      return { no: index + 1, angka, shio };
+    })
+    .filter(item => item.angka[2] === kepala && item.angka[3] === ekor);
+
+  tampilkanHasil(hasil);
+}
+
+function tampilkanHasil(data) {
+  const tbody = document.getElementById("hasilTabel");
+  tbody.innerHTML = "";
+  data.forEach(item => {
+    tbody.innerHTML += `
+      <tr>
+        <td class="border px-4 py-2">${item.no}</td>
+        <td class="border px-4 py-2">${item.angka}</td>
+        <td class="border px-4 py-2">${item.shio}</td>
+      </tr>
+    `;
+  });
+}
+</script>
+
+</body>
+</html>
