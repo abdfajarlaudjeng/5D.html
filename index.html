@@ -52,9 +52,11 @@ function filterAngka() {
         return cocokKepala && cocokEkor;
     });
 
-    hasilDiv.innerHTML = hasil.length ? 
-        `<b>Hasil:</b> ${hasil.join(" * ")}` : 
-        "<b>Tidak ada angka yang cocok.</b>";
+    if (hasil.length) {
+        hasilDiv.innerHTML = `<b>Hasil:</b> ${hasil.join(" * ")}<br><br><b>Total:</b> ${hasil.length} angka`;
+    } else {
+        hasilDiv.innerHTML = "<b>Tidak ada angka yang cocok.</b>";
+    }
 }
 
 function salinHasil() {
