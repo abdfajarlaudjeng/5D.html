@@ -2,112 +2,115 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Filter 4D dengan Sidebar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Filter Data 4D</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { font-family: sans-serif; }
-    .sidebar { width: 220px; }
-    .content { margin-left: 220px; padding: 1rem; }
-  </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 font-sans">
 
   <!-- Sidebar -->
-  <div class="sidebar fixed top-0 left-0 h-full bg-gray-800 text-white p-4">
-    <h2 class="text-lg font-bold mb-4">Menu</h2>
-    <ul>
-      <li class="mb-2"><a href="#" class="hover:underline">Dashboard</a></li>
-      <li class="mb-2"><a href="#" class="hover:underline">Filter 4D</a></li>
-      <li class="mb-2"><a href="#" class="hover:underline">Data Lain</a></li>
-    </ul>
-  </div>
+  <div class="flex">
+    <aside class="w-64 bg-gray-800 text-white h-screen fixed">
+      <div class="p-4 text-lg font-bold border-b border-gray-700">Menu</div>
+      <nav class="p-4 space-y-2">
+        <a href="#" class="block px-2 py-1 hover:bg-gray-700 rounded">Dashboard</a>
+        <a href="#" class="block px-2 py-1 hover:bg-gray-700 rounded">Data 4D</a>
+        <a href="#" class="block px-2 py-1 hover:bg-gray-700 rounded">Pengaturan</a>
+      </nav>
+    </aside>
 
-  <!-- Main Content -->
-  <div class="content">
-    <h1 class="text-2xl font-bold mb-4">Filter Data 4D</h1>
+    <!-- Konten -->
+    <main class="ml-64 flex-1 p-6">
+      <h1 class="text-2xl font-bold mb-4">Filter Data 4D</h1>
 
-    <!-- Input Angka Main -->
-    <label class="block font-semibold mb-2">Input Angka Main (max 6 digit per baris, 10 baris):</label>
-    <textarea id="angkaMain" rows="10" maxlength="60" 
-      class="w-full border border-gray-300 p-2 rounded mb-4"
-      placeholder="Masukkan angka (contoh: 123456)"
-    ></textarea>
+      <!-- Form Input -->
+      <div class="bg-white p-4 rounded shadow mb-6">
+        <label for="angkaMain" class="block font-medium mb-2">Input Angka Main (maks 6 digit per baris, 10 baris)</label>
+        <textarea id="angkaMain" rows="10" maxlength="60"
+          class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring focus:border-blue-500"
+          placeholder="Masukkan angka, satu per baris (maks 6 digit)..."></textarea>
+        <p id="errorMsg" class="text-red-500 text-sm mt-1 hidden">Setiap baris hanya boleh berisi angka maksimal 6 digit.</p>
 
-    <!-- Filter Shio -->
-    <label class="block font-semibold mb-2">Filter Shio:</label>
-    <select id="filterShio" class="w-full border border-gray-300 p-2 rounded mb-4">
-      <option value="">Semua Shio</option>
-      <option value="Tikus">Tikus</option>
-      <option value="Kerbau">Kerbau</option>
-      <option value="Macan">Macan</option>
-      <!-- Tambah shio lainnya -->
-    </select>
+        <label for="filterShio" class="block font-medium mt-4 mb-2">Filter Shio</label>
+        <select id="filterShio" class="w-full border border-gray-300 rounded p-2">
+          <option value="">Semua Shio</option>
+          <option value="tikus">Tikus</option>
+          <option value="kerbau">Kerbau</option>
+          <option value="macan">Macan</option>
+          <option value="kelinci">Kelinci</option>
+          <option value="naga">Naga</option>
+          <option value="ular">Ular</option>
+          <option value="kuda">Kuda</option>
+          <option value="kambing">Kambing</option>
+          <option value="monyet">Monyet</option>
+          <option value="ayam">Ayam</option>
+          <option value="anjing">Anjing</option>
+          <option value="babi">Babi</option>
+        </select>
 
-    <!-- Tombol Proses -->
-    <button id="btnProses" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Proses</button>
+        <button id="btnProses" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          Proses
+        </button>
+      </div>
 
-    <!-- Tabel Hasil -->
-    <div class="mt-6 overflow-x-auto">
-      <table class="w-full border border-gray-300">
-        <thead class="bg-gray-200">
-          <tr>
-            <th class="border border-gray-300 px-3 py-2">No</th>
-            <th class="border border-gray-300 px-3 py-2">Angka 4D</th>
-            <th class="border border-gray-300 px-3 py-2">Shio</th>
-          </tr>
-        </thead>
-        <tbody id="tabelHasil"></tbody>
-      </table>
-    </div>
+      <!-- Tabel Data -->
+      <div class="bg-white p-4 rounded shadow overflow-x-auto">
+        <table class="min-w-full border border-gray-300">
+          <thead class="bg-gray-200">
+            <tr>
+              <th class="border border-gray-300 px-4 py-2">No</th>
+              <th class="border border-gray-300 px-4 py-2">Angka</th>
+              <th class="border border-gray-300 px-4 py-2">Shio</th>
+            </tr>
+          </thead>
+          <tbody id="tabelData"></tbody>
+        </table>
+      </div>
+    </main>
   </div>
 
   <script>
-    const textarea = document.getElementById("angkaMain");
-
-    textarea.addEventListener("input", () => {
-      let lines = textarea.value.split("\n").map(line => {
-        // Hanya angka dan maksimal 6 digit per baris
-        let angka = line.replace(/\D/g, "").slice(0, 6);
-        return angka;
-      });
-
-      // Batasi maksimal 10 baris
-      if (lines.length > 10) {
-        lines = lines.slice(0, 10);
+    // Validasi real-time
+    document.getElementById('angkaMain').addEventListener('input', function() {
+      const lines = this.value.split('\n');
+      let valid = true;
+      for (let line of lines) {
+        if (line.trim() && (!/^\d{1,6}$/.test(line.trim()))) {
+          valid = false;
+          break;
+        }
       }
-
-      textarea.value = lines.join("\n");
+      document.getElementById('errorMsg').classList.toggle('hidden', valid);
     });
 
-    document.getElementById("btnProses").addEventListener("click", () => {
-      const dataInput = textarea.value.split("\n").filter(l => l.trim() !== "");
-      const shioFilter = document.getElementById("filterShio").value;
-      
-      // Ambil data dari Google Sheet
-      fetch("URL_JSON_GOOGLE_SHEET")
+    document.getElementById('btnProses').addEventListener('click', function() {
+      const angkaList = document.getElementById('angkaMain').value.split('\n').map(x => x.trim()).filter(x => x);
+      const shioFilter = document.getElementById('filterShio').value;
+
+      fetch('https://opensheet.elk.sh/SPREADSHEET_ID/4d') // Ganti SPREADSHEET_ID dengan ID Google Sheet kamu
         .then(res => res.json())
         .then(data => {
-          let hasil = data.filter(item => {
-            let cocok = dataInput.includes(item[0]);
-            let shioCocok = !shioFilter || item[1] === shioFilter;
-            return cocok && shioCocok;
-          });
+          const filtered = data
+            .slice(1, 13) // B2 sampai B13
+            .filter(row => {
+              const matchAngka = angkaList.length === 0 || angkaList.includes(row['Angka']);
+              const matchShio = !shioFilter || (row['Shio'] && row['Shio'].toLowerCase() === shioFilter);
+              return matchAngka && matchShio;
+            });
 
-          const tbody = document.getElementById("tabelHasil");
-          tbody.innerHTML = "";
-          hasil.forEach((row, i) => {
-            tbody.innerHTML += `
-              <tr>
-                <td class="border border-gray-300 px-3 py-2">${i+1}</td>
-                <td class="border border-gray-300 px-3 py-2">${row[0]}</td>
-                <td class="border border-gray-300 px-3 py-2">${row[1]}</td>
-              </tr>
+          const tbody = document.getElementById('tabelData');
+          tbody.innerHTML = '';
+          filtered.forEach((row, i) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="border border-gray-300 px-4 py-2">${i + 1}</td>
+              <td class="border border-gray-300 px-4 py-2">${row['Angka'] || ''}</td>
+              <td class="border border-gray-300 px-4 py-2">${row['Shio'] || ''}</td>
             `;
+            tbody.appendChild(tr);
           });
         });
     });
   </script>
-
 </body>
 </html>
