@@ -2,14 +2,14 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Filter Data 4D</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans">
 
-  <!-- Sidebar -->
   <div class="flex">
+    <!-- Sidebar fixed -->
     <aside class="w-64 bg-gray-800 text-white h-screen fixed">
       <div class="p-4 text-lg font-bold border-b border-gray-700">Menu</div>
       <nav class="p-4 space-y-2">
@@ -19,20 +19,24 @@
       </nav>
     </aside>
 
-    <!-- Konten -->
+    <!-- Konten utama -->
     <main class="ml-64 flex-1 p-6">
       <h1 class="text-2xl font-bold mb-4">Filter Data 4D</h1>
 
-      <!-- Form Input -->
       <div class="bg-white p-4 rounded shadow mb-6">
-        <label for="angkaMain" class="block font-medium mb-2">Input Angka Main (maks 6 digit per baris, 10 baris)</label>
-        <textarea id="angkaMain" rows="10" maxlength="60"
+        <label for="angkaMain" class="block font-medium mb-2">
+          Input Angka Main (maks 6 digit per baris, 10 baris)
+        </label>
+        <textarea id="angkaMain" rows="10"
           class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring focus:border-blue-500"
           placeholder="Masukkan angka, satu per baris (maks 6 digit)..."></textarea>
-        <p id="errorMsg" class="text-red-500 text-sm mt-1 hidden">Setiap baris hanya boleh berisi angka maksimal 6 digit.</p>
+        <p id="errorMsg" class="text-red-500 text-sm mt-1 hidden">
+          Setiap baris hanya boleh berisi angka maksimal 6 digit.
+        </p>
 
         <label for="filterShio" class="block font-medium mt-4 mb-2">Filter Shio</label>
-        <select id="filterShio" class="w-full border border-gray-300 rounded p-2">
+        <select id="filterShio"
+          class="w-full border border-gray-300 rounded p-2 mb-4">
           <option value="">Semua Shio</option>
           <option value="tikus">Tikus</option>
           <option value="kerbau">Kerbau</option>
@@ -48,12 +52,13 @@
           <option value="babi">Babi</option>
         </select>
 
-        <button id="btnProses" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        <button id="btnProses"
+          class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
           Proses
         </button>
       </div>
 
-      <!-- Tabel Data -->
+      <!-- Tabel hasil -->
       <div class="bg-white p-4 rounded shadow overflow-x-auto">
         <table class="min-w-full border border-gray-300">
           <thead class="bg-gray-200">
@@ -70,12 +75,12 @@
   </div>
 
   <script>
-    // Validasi real-time
-    document.getElementById('angkaMain').addEventListener('input', function() {
+    // Validasi real-time textarea
+    document.getElementById('angkaMain').addEventListener('input', function () {
       const lines = this.value.split('\n');
       let valid = true;
       for (let line of lines) {
-        if (line.trim() && (!/^\d{1,6}$/.test(line.trim()))) {
+        if (line.trim() && !/^\d{1,6}$/.test(line.trim())) {
           valid = false;
           break;
         }
@@ -83,31 +88,38 @@
       document.getElementById('errorMsg').classList.toggle('hidden', valid);
     });
 
-    document.getElementById('btnProses').addEventListener('click', function() {
-      const angkaList = document.getElementById('angkaMain').value.split('\n').map(x => x.trim()).filter(x => x);
+    document.getElementById('btnProses').addEventListener('click', function () {
+      const angkaList = document.getElementById('angkaMain').value
+                        .split('\n')
+                        .map(x => x.trim())
+                        .filter(x => x);
       const shioFilter = document.getElementById('filterShio').value;
 
-      fetch('https://opensheet.elk.sh/SPREADSHEET_ID/4d') // Ganti SPREADSHEET_ID dengan ID Google Sheet kamu
+      fetch('https://opensheet.elk.sh/1jQWs8CTzPzibBDQ-btIexLE70oMqdhIFZOrnZ8dbEUQ/4d')
         .then(res => res.json())
         .then(data => {
-          const filtered = data
-            .slice(1, 13) // B2 sampai B13
-            .filter(row => {
-              const matchAngka = angkaList.length === 0 || angkaList.includes(row['Angka']);
-              const matchShio = !shioFilter || (row['Shio'] && row['Shio'].toLowerCase() === shioFilter);
-              return matchAngka && matchShio;
-            });
+          // Data diambil sebagai array objek, header harus sesuai kolom
+          const filtered = data.slice(1, 13).filter(row => {
+            const angk = row['ANGKA 4D'] || row['Angka'] || row['angka'] || '';
+            const shio = (row['SHIO'] || row['Shio'] || row['shio'] || '').toLowerCase();
+
+            const matchAngka = angkaList.length === 0 || angkaList.includes(angk);
+            const matchShio = !shioFilter || shio === shioFilter;
+            return matchAngka && matchShio;
+          });
 
           const tbody = document.getElementById('tabelData');
           tbody.innerHTML = '';
           filtered.forEach((row, i) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td class="border border-gray-300 px-4 py-2">${i + 1}</td>
-              <td class="border border-gray-300 px-4 py-2">${row['Angka'] || ''}</td>
-              <td class="border border-gray-300 px-4 py-2">${row['Shio'] || ''}</td>
+            const angk = row['ANGKA 4D'] || row['Angka'] || row['angka'] || '';
+            const shio = row['SHIO'] || row['Shio'] || row['shio'] || '';
+            tbody.innerHTML += `
+              <tr>
+                <td class="border border-gray-300 px-4 py-2">${i + 1}</td>
+                <td class="border border-gray-300 px-4 py-2">${angk}</td>
+                <td class="border border-gray-300 px-4 py-2">${shio}</td>
+              </tr>
             `;
-            tbody.appendChild(tr);
           });
         });
     });
