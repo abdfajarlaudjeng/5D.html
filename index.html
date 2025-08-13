@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Validasi Angka 5D</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 500px;
+      margin: auto;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    textarea, input, button {
+      width: 100%;
+      padding: 8px;
+      margin: 8px 0;
+      font-size: 16px;
+    }
+    button {
+      background: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #218838;
+    }
+    .result {
+      margin-top: 15px;
+      padding: 10px;
+      background: #e9ecef;
+      border-radius: 5px;
+      min-height: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Validasi Angka 5D</h2>
+  <label>Masukkan angka 5D (pisahkan dengan spasi atau enter):</label>
+  <textarea id="angkaList" rows="5" placeholder="contoh: 12345 23456 34567"></textarea>
+
+  <label>Masukkan angka main:</label>
+  <input type="text" id="angkaMain" maxlength="5" placeholder="contoh: 1234">
+
+  <button onclick="validasiAngka()">Validasi</button>
+
+  <div class="result" id="hasil"></div>
+</div>
+
+<script>
+function validasiAngka() {
+  let list = document.getElementById("angkaList").value.trim().split(/\s+/);
+  let main = document.getElementById("angkaMain").value.trim();
+  let hasilDiv = document.getElementById("hasil");
+
+  if (!main) {
+    hasilDiv.innerHTML = "⚠ Masukkan angka main terlebih dahulu.";
+    return;
+  }
+
+  let hasil = list.filter(angka => {
+    return main.split("").every(d => angka.includes(d));
+  });
+
+  if (hasil.length > 0) {
+    hasilDiv.innerHTML = "✅ Angka cocok:<br>" + hasil.join(", ");
+  } else {
+    hasilDiv.innerHTML = "❌ Tidak ada angka yang cocok.";
+  }
+}
+</script>
+
+</body>
+</html>
