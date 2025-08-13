@@ -4,14 +4,54 @@
 <meta charset="UTF-8">
 <title>Validasi Angka 5D</title>
 <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    textarea, input { width: 100%; padding: 8px; margin: 5px 0; }
-    .hasil { margin-top: 10px; padding: 10px; background: #f0f0f0; }
-    button { padding: 8px 12px; margin-right: 5px; cursor: pointer; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    /* Navbar */
+    .navbar {
+        background-color: #333;
+        overflow: hidden;
+    }
+    .navbar a {
+        float: left;
+        display: block;
+        color: #fff;
+        text-align: center;
+        padding: 14px 20px;
+        text-decoration: none;
+    }
+    .navbar a:hover {
+        background-color: #575757;
+    }
+    /* Konten */
+    .container {
+        padding: 20px;
+    }
+    textarea, input {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+    }
+    .hasil {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f0f0f0;
+    }
+    button {
+        padding: 8px 12px;
+        margin-right: 5px;
+        cursor: pointer;
+    }
 </style>
 </head>
 <body>
 
+<!-- Navbar -->
+<div class="navbar">
+    <a href="#">Angka 5D</a>
+    <a href="#">SHIO Main</a>
+    <a href="#">Angka Main</a>
+</div>
+
+<div class="container">
 <h2>Validasi Angka 5D</h2>
 
 <label>Masukkan Angka 5D (pisahkan dengan * tanpa spasi):</label>
@@ -27,6 +67,7 @@
 <button onclick="salinHasil()">Salin ke Clipboard</button>
 
 <div class="hasil" id="hasil"></div>
+</div>
 
 <script>
 function filterAngka() {
