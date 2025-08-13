@@ -7,6 +7,7 @@
     body { font-family: Arial, sans-serif; padding: 20px; }
     textarea, input { width: 100%; padding: 8px; margin: 5px 0; }
     .hasil { margin-top: 10px; padding: 10px; background: #f0f0f0; }
+    button { padding: 8px 12px; margin-right: 5px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -23,6 +24,7 @@
 <input type="text" id="ekor" maxlength="6" placeholder="Maksimal 6 digit angka">
 
 <button onclick="filterAngka()">Validasi</button>
+<button onclick="salinHasil()">Salin ke Clipboard</button>
 
 <div class="hasil" id="hasil"></div>
 
@@ -53,6 +55,19 @@ function filterAngka() {
     hasilDiv.innerHTML = hasil.length ? 
         `<b>Hasil:</b> ${hasil.join(" * ")}` : 
         "<b>Tidak ada angka yang cocok.</b>";
+}
+
+function salinHasil() {
+    let hasilText = document.getElementById("hasil").innerText.replace(/^Hasil:\s*/i, "");
+    if (!hasilText || hasilText.includes("Tidak ada angka")) {
+        alert("Tidak ada hasil yang bisa disalin!");
+        return;
+    }
+    navigator.clipboard.writeText(hasilText).then(() => {
+        alert("Hasil berhasil disalin ke clipboard!");
+    }).catch(() => {
+        alert("Gagal menyalin ke clipboard.");
+    });
 }
 </script>
 
